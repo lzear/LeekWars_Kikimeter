@@ -1,28 +1,32 @@
 LeekWars_Kikimeter
 ==================
-Les fichiers de ce Git sont un outil pour les joueurs du jeu [LeekWars](),
-crée suite à [une suggestion](http://leekwars.com/forum/category-4/topic-1618)
+Les fichiers de ce Git sont un outil pour les joueurs du jeu [LeekWars](http://leekwars.com/), créé suite à [une suggestion](http://leekwars.com/forum/category-4/topic-1618)
 
 
 kikimeter.js
 ------------
 
-script JavaScript qui s'utilise avec TamperMonkey ou GreaseMonkey
+script JavaScript pour TamperMonkey ou GreaseMonkey.
   
-  Affiche un tableau de résumé des combat
+  Affiche un tableau de résumé des combats.
   
-  Si un(e?) URL vers le fichier **get.php** est définie, le script envoie les données du combat au format JSON via une requête POST
+  Si un(e?) URL vers le fichier **get.php** est défini(e), le script envoie les données du combat au format JSON via une requête POST.
     
     
 get.php
 -------
 
-Optionnel, nécessite l'accès à une base de donnée
+Optionnel.
 
-Receptionne les données
+Nécessite :
+   * l'accès à une base de donnée.
+   * fichier `connect.php` pour s'y connecter.
+   * une table `leekwars_data` (la définition de la table est donnée en commentaire dans le fichier PHP).
 
-Envoie les données à une table SQL  
-(la définition de la table est donnée en commentaire)
+Receptionne les données.
+
+Envoie les données à la table SQL.
+
   
 Images
 -------
