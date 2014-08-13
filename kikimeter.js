@@ -11,7 +11,7 @@
 var dataReceiverURL = ''; // http:// TRUC /get.php
 
 // EDITER dispData POUR CHOISIR LES COLONNES À AFFICHER
-var dispData = ['fightId', 'draw', 'leekId', 'name', 'level', 'XP', 'team', 'alive', 'gainXP', 'gainTalent', 'gainHabs', 'turnsPlayed', 'PT', 'PM', 'dmg_in', 'dmg_out', 'heal_in', 'heal_out', 'fails', 'lastHits', 'blabla', 'crashes'];
+var dispData = ['level', 'turnsPlayed', 'PT', 'PM', 'dmg_in', 'dmg_out', 'heal_in', 'heal_out', 'fails', 'lastHits', 'blabla', 'crashes'];
 //var dispData = ['fightId', 'draw', 'leekId', 'name', 'level', 'XP', 'team', 'alive', 'gainXP', 'gainTalent', 'gainHabs', 'turnsPlayed', 'PT', 'PM', 'dmg_in', 'dmg_out', 'heal_in', 'heal_out', 'fails', 'lastHits', 'blabla', 'crashes']; // <--- Toutes les données
 
 // intitulés des variables
