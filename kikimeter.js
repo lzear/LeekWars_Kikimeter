@@ -11,7 +11,7 @@
 var dataReceiverURL = ''; // http:// TRUC /get.php
 
 // EDITER dispData POUR CHOISIR LES COLONNES À AFFICHER
-var dispData = ['level', 'turnsPlayed', 'PT', 'PM', 'dmg_in', 'dmg_out', 'heal_in', 'heal_out', 'fails', 'lastHits', 'blabla', 'crashes'];
+var dispData = ['level', 'turnsPlayed', 'dmg_out', 'dmg_in', 'heal_out', 'heal_in', 'PT', 'PM', 'fails', 'lastHits', 'blabla', 'crashes'];
 //var dispData = ['fightId', 'draw', 'leekId', 'name', 'level', 'XP', 'team', 'alive', 'gainXP', 'gainTalent', 'gainHabs', 'turnsPlayed', 'PT', 'PM', 'dmg_in', 'dmg_out', 'heal_in', 'heal_out', 'fails', 'lastHits', 'blabla', 'crashes']; // <--- Toutes les données
 
 // intitulés des variables
@@ -69,38 +69,38 @@ function Leek(leekId, name, level, XP, team, alive, gainXP, gainTalent, gainHabs
 // Lit les tableaux d'équipes
 function readTables()
 {
-	var report_tables = document.getElementById('report-general').getElementsByTagName('table') ; 
-	var a = true ;
-	var team = 0 ;
-	for (var i = 0; i < report_tables.length; i++) {
-    
-		if((i+report_tables.length != 4) && (i+report_tables.length != 6))
-		{
-			team++ ;
-			var color = team ? '<div style="background-color:#A0A0EC;">' : '<div style="background-color:#ECA0A0;">' ;
-			var trs = report_tables[i].children[0].children ;
+    var report_tables = document.getElementById('report-general').getElementsByTagName('table') ; 
+    var a = true ;
+    var team = 0 ;
+    for (var i = 0; i < report_tables.length; i++) {
         
-			for (var j = 1; j < trs.length; j++) {
-				if (trs[j].className != 'total')
-				{
-                var linkTab = trs[j].getElementsByTagName("a")[0].href.split('/');
-                var leekId = parseInt(linkTab[linkTab.length-1]) ;
-                //var output = color + trs[j].children[0].innerHTML + '</div>' ;
-                var name		= trs[j].children[0].textContent ;
-                var alive		=(trs[j].children[0].children[0].className == 'alive') ? 1 : 0 ;
-                var level		= parseInt(trs[j].children[1].textContent) ;
-                var gainXP		= parseInt(trs[j].children[2].textContent) ;
-                var gainTalent	= parseInt(trs[j].children[3].textContent) ;
-                var gainHabs	= parseInt(trs[j].children[4].textContent) ;
-                var XP = parseInt(document.getElementById('tt_'+trs[j].children[2].children[0].id).textContent.split('/')[0].replace(/\s+/g, ''));
-                
-                leeks[trs[j].children[0].textContent] = new Leek(leekId, name, level, XP, team, alive, gainXP, gainTalent, gainHabs) ;
-                a = false ;
+        if((i+report_tables.length != 4) && (i+report_tables.length != 6))
+        {
+            team++ ;
+            var color = team ? '<div style="background-color:#A0A0EC;">' : '<div style="background-color:#ECA0A0;">' ;
+            var trs = report_tables[i].children[0].children ;
+            
+            for (var j = 1; j < trs.length; j++) {
+                if (trs[j].className != 'total')
+                {
+                    var linkTab = trs[j].getElementsByTagName("a")[0].href.split('/');
+                    var leekId = parseInt(linkTab[linkTab.length-1]) ;
+                    //var output = color + trs[j].children[0].innerHTML + '</div>' ;
+                    var name		= trs[j].children[0].textContent ;
+                    var alive		=(trs[j].children[0].children[0].className == 'alive') ? 1 : 0 ;
+                    var level		= parseInt(trs[j].children[1].textContent) ;
+                    var gainXP		= parseInt(trs[j].children[2].textContent) ;
+                    var gainTalent	= parseInt(trs[j].children[3].textContent) ;
+                    var gainHabs	= parseInt(trs[j].children[4].textContent) ;
+                    var XP = parseInt(document.getElementById('tt_'+trs[j].children[2].children[0].id).textContent.split('/')[0].replace(/\s+/g, ''));
+                    
+                    leeks[trs[j].children[0].textContent] = new Leek(leekId, name, level, XP, team, alive, gainXP, gainTalent, gainHabs) ;
+                    a = false ;
+                }
             }
         }
+        
     }
-    
-}
 }
 
 // Lit la liste des actions
@@ -175,73 +175,73 @@ function readActions()
 // Affiche le tableau de résumé
 function displayKikimeter()
 {
-var table = document.createElement('table');
-table.className = 'report' ;
-
-var tbody = document.createElement('tbody');
-
-var tr = document.createElement('tr');
-
-var th = document.createElement('th');
-th.appendChild(document.createTextNode('Poireau'));
-tr.appendChild(th) ;
-
-for (var i = 0; i < dispData.length; i++) {
+    var table = document.createElement('table');
+    table.className = 'report' ;
+    
+    var tbody = document.createElement('tbody');
+    
+    var tr = document.createElement('tr');
+    
     var th = document.createElement('th');
-    th.appendChild(document.createTextNode(kikimeterData[dispData[i]]));
+    th.appendChild(document.createTextNode('Poireau'));
     tr.appendChild(th) ;
-}
-
-tbody.appendChild(tr) ;
-
-for (var j in leeks) {
-    tr = document.createElement('tr');
     
-    td = document.createElement('td');
-    td.style['background-color'] =  (leeks[j].data['team'] == 1) ? '#A0A0EC' : '#ECA0A0' ;
-    
-    if (leeks[j].data['alive']) {
-        var span = document.createElement('span');
-        span.className = 'alive' ;
-    }
-    else {
-        var span = document.createElement('span');
-        span.className = 'dead' ;
-        td.appendChild(span) ;
-        span = document.createElement('span') ;
-    }
-    
-    var a = document.createElement('a') ;
-    a.href = '/leek/' + leeks[j].data['leekId'] ;
-    a.appendChild(document.createTextNode(leeks[j].data['name'])) ;
-    span.appendChild(a);
-    td.appendChild(span) ;
-    
-    tr.appendChild(td) ;
-    
-    for (var i in dispData)	{
-        
-        td = document.createElement('td');
-        td.appendChild(document.createTextNode(leeks[j].data[dispData[i]]));
-        tr.appendChild(td) ;
+    for (var i = 0; i < dispData.length; i++) {
+        var th = document.createElement('th');
+        th.appendChild(document.createTextNode(kikimeterData[dispData[i]]));
+        tr.appendChild(th) ;
     }
     
     tbody.appendChild(tr) ;
-}
-
-table.appendChild(tbody) ;
-
-var resume = document.createElement('div');
-resume.id = 'report-resume' ;
-
-var h1 = document.createElement('h1');
-h1.appendChild(document.createTextNode('Résumé'));
-document.body.appendChild(h1);
-resume.appendChild(h1);
-resume.appendChild(table);
-
-var page=document.getElementById('page');
-page.insertBefore(resume, page.children[3]);
+    
+    for (var j in leeks) {
+        tr = document.createElement('tr');
+        
+        td = document.createElement('td');
+        td.style['background-color'] =  (leeks[j].data['team'] == 1) ? '#A0A0EC' : '#ECA0A0' ;
+        
+        if (leeks[j].data['alive']) {
+            var span = document.createElement('span');
+            span.className = 'alive' ;
+        }
+        else {
+            var span = document.createElement('span');
+            span.className = 'dead' ;
+            td.appendChild(span) ;
+            span = document.createElement('span') ;
+        }
+        
+        var a = document.createElement('a') ;
+        a.href = '/leek/' + leeks[j].data['leekId'] ;
+        a.appendChild(document.createTextNode(leeks[j].data['name'])) ;
+        span.appendChild(a);
+        td.appendChild(span) ;
+        
+        tr.appendChild(td) ;
+        
+        for (var i in dispData)	{
+            
+            td = document.createElement('td');
+            td.appendChild(document.createTextNode(leeks[j].data[dispData[i]]));
+            tr.appendChild(td) ;
+        }
+        
+        tbody.appendChild(tr) ;
+    }
+    
+    table.appendChild(tbody) ;
+    
+    var resume = document.createElement('div');
+    resume.id = 'report-resume' ;
+    
+    var h1 = document.createElement('h1');
+    h1.appendChild(document.createTextNode('Résumé'));
+    document.body.appendChild(h1);
+    resume.appendChild(h1);
+    resume.appendChild(table);
+    
+    var page=document.getElementById('page');
+    page.insertBefore(resume, page.children[3]);
 }
 
 // Truc AJAX pour envoyer les données à la page PHP
@@ -281,16 +281,16 @@ displayKikimeter() ;
 //		ENVOI DES DONNEES SUR UNE PAGE DISTANTE
 if (dataReceiverURL != '')
 {
-var json = 'json=' + JSON.stringify( leeks );	// mise au format JSON
-console.log(json) ;
-
-$.ajax({
-    type : 'POST',
-    url : dataReceiverURL,
-    dataType : 'json', 
-    data: json,
-    success: function(succss){
-        console.log(json);
-    }
-});
+    var json = 'json=' + JSON.stringify( leeks );	// mise au format JSON
+    console.log(json) ;
+    
+    $.ajax({
+        type : 'POST',
+        url : dataReceiverURL,
+        dataType : 'json', 
+        data: json,
+        success: function(succss){
+            console.log(json);
+        }
+    });
 }
