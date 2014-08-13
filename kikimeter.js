@@ -88,11 +88,11 @@ function readTables()
                     //var output = color + trs[j].children[0].innerHTML + '</div>' ;
                     var name		= trs[j].children[0].textContent ;
                     var alive		=(trs[j].children[0].children[0].className == 'alive') ? 1 : 0 ;
-                    var level		= parseInt(trs[j].children[1].textContent) ;
-                    var gainXP		= parseInt(trs[j].children[2].textContent) ;
-                    var gainTalent	= parseInt(trs[j].children[3].textContent) ;
-                    var gainHabs	= parseInt(trs[j].children[4].textContent) ;
-                    var XP = parseInt(document.getElementById('tt_'+trs[j].children[2].children[0].id).textContent.split('/')[0].replace(/\s+/g, ''));
+                    var level		= parseInt(trs[j].children[1].textContent.replace(/[^\d.]/g, '')) ;
+					var gainXP		= parseInt(trs[j].children[2].children[1].textContent.replace(/[^\d.]/g, '')) ;
+                    var gainTalent	= parseInt(trs[j].children[3].textContent.replace(/[^\d.]/g, '')) ;
+                    var gainHabs	= parseInt(trs[j].children[4].textContent.replace(/[^\d.]/g, '')) ;
+                    var XP = parseInt(document.getElementById('tt_'+trs[j].children[2].children[0].id).textContent.split('/')[0].replace(/[^\d.]/g, ''));
                     
                     leeks[trs[j].children[0].textContent] = new Leek(leekId, name, level, XP, team, alive, gainXP, gainTalent, gainHabs) ;
                     a = false ;
@@ -137,14 +137,14 @@ function readActions()
         
         // DEGATS
         if (/^([^\s]+) perd ([0-9]+) PV$/.test(actions[i].textContent)) {
-            leeks[RegExp.$1].addToData('dmg_in', parseInt(RegExp.$2)) ;
-            leeks[attacker].addToData('dmg_out', parseInt(RegExp.$2)) ;
+            leeks[RegExp.$1].addToData('dmg_in', parseInt(RegExp.$2.replace(/[^\d.]/g, ''))) ;
+            leeks[attacker].addToData('dmg_out', parseInt(RegExp.$2.replace(/[^\d.]/g, ''))) ;
         }
         
         // SOINS
         if (/^([^\s]+) gagne ([0-9]+) PV$/.test(actions[i].textContent)) {
-            leeks[RegExp.$1].addToData('heal_in', parseInt(RegExp.$2)) ;
-            leeks[attackerChip].addToData('heal_out', parseInt(RegExp.$2)) ;
+            leeks[RegExp.$1].addToData('heal_in', parseInt(RegExp.$2.replace(/[^\d.]/g, ''))) ;
+            leeks[attackerChip].addToData('heal_out', parseInt(RegExp.$2.replace(/[^\d.]/g, ''))) ;
         }
         
         // ECHEC
