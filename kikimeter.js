@@ -12,10 +12,7 @@ var dataReceiverURL = ''; // http:// TRUC /get.php
 
 // EDITER dispData POUR CHOISIR LES COLONNES À AFFICHER
 var dispData = ['level', 'turnsPlayed', 'dmg_out', 'dmg_in', 'heal_out', 'heal_in', 'PT', 'PM', 'fails', 'lastHits', 'blabla', 'crashes'];
-//var dispData = ['fightId','leekId','name','level','XP','draw','team','alive','gainXP','gainTalent','gainHabs','turnsPlayed','PT','PM',	'actionsWeapon',	'actionsChip','dmg_in','dmg_out','heal_in','heal_out','fails','lastHits','blabla','crashes']; // <--- Toutes les données
-
-
-'fightId','leekId','name','level','XP','draw','team','alive','gainXP','gainTalent','gainHabs','turnsPlayed','PT','PM',	'actionsWeapon',	'actionsChip','dmg_in','dmg_out','heal_in','heal_out','fails','lastHits','blabla','crashes'
+//var dispData = ['fightId', 'draw', 'leekId', 'name', 'level', 'XP', 'team', 'alive', 'gainXP', 'gainTalent', 'gainHabs', 'turnsPlayed', 'PT', 'PM', 'dmg_in', 'dmg_out', 'heal_in', 'heal_out', 'fails', 'lastHits', 'blabla', 'crashes']; // <--- Toutes les données
 
 // intitulés des variables
 var kikimeterData = {
@@ -33,14 +30,12 @@ var kikimeterData = {
     'turnsPlayed':'Tours joués',
     'PT' :	'PT',
     'PM' :	'PM',
-	'actionsWeapon' : 'Tirs',
-	'actionsChip' : 'Usages Chips',
     'dmg_in' :	'Dégats reçus',
     'dmg_out' :	'Dégats infligés',
     'heal_in' :	'Soins reçus',
     'heal_out' :'Soins lancés',
     'fails' :	'Échecs',
-    'lastHits' :'Kills',
+    'lastHits' :'Last Hits',
     'blabla' :	'Blabla',
     'crashes' : 'Plantages'
 } ;
@@ -104,6 +99,7 @@ function readTables()
                 }
             }
         }
+        
     }
 }
 
@@ -115,15 +111,13 @@ function readActions()
     for(var i=0; i<actions.length; i++) {
         
         // VARIABLES UTILES POUR LES ACTIONS DE PLUSIEURS LIGNES
-        if (/^([^\s]+) tire$/.test(actions[i].textContent)) {
+        if (/^([^\s]+) tire/.test(actions[i].textContent)) {
             var attacker = RegExp.$1 ;
             var attackerWeapon = RegExp.$1 ;
-			leeks[attacker].addToData('actionsWeapon', 1) ;
         }
         if (/^([^\s]+) lance [^\s]+$/.test(actions[i].textContent)) {
             var attacker = RegExp.$1 ;
             var attackerChip = RegExp.$1 ;
-			leeks[attacker].addToData('actionsChip', 1) ;
         }
         
         // TOUR
@@ -156,11 +150,9 @@ function readActions()
         // ECHEC
         if (/^([^\s]+) tire... Échec !$/.test(actions[i].textContent)) {
             leeks[RegExp.$1].addToData('fails', 1) ;
-			leeks[RegExp.$1].addToData('actionsWeapon', 1) ;
         }
         if (/^([^\s]+) lance [^\s]+... Échec !$/.test(actions[i].textContent)) {
             leeks[RegExp.$1].addToData('fails', 1) ;
-			leeks[RegExp.$1].addToData('actionsChip', 1) ;
         }
         
         // MORT
