@@ -11,8 +11,8 @@
 var dataReceiverURL = ''; // http:// TRUC /get.php
 
 // EDITER dispData POUR CHOISIR LES COLONNES À AFFICHER
-var dispData = ['level', 'turnsPlayed', 'dmg_out', 'dmg_in', 'heal_out', 'heal_in', 'PT', 'PM', 'fails', 'lastHits', 'blabla', 'crashes'];
-//var dispData = ['fightId', 'draw', 'leekId', 'name', 'level', 'XP', 'team', 'alive', 'gainXP', 'gainTalent', 'gainHabs', 'turnsPlayed', 'PT', 'PM', 'dmg_in', 'dmg_out', 'heal_in', 'heal_out', 'fails', 'lastHits', 'blabla', 'crashes']; // <--- Toutes les données
+//var dispData = ['level', 'turnsPlayed', 'dmg_out', 'dmg_in', 'heal_out', 'heal_in', 'PT', 'PM', 'fails', 'lastHits', 'blabla', 'crashes'];
+var dispData = ['fightId','leekId','name','level','XP','draw','team','alive', 'bonus','gainXP','gainTalent','gainHabs','turnsPlayed','PT','PM',	'actionsWeapon',	'actionsChip','dmg_in','dmg_out','heal_in','heal_out','fails','lastHits','blabla','crashes']; // <--- Toutes les données
 
 // intitulés des variables
 var kikimeterData = {
@@ -24,24 +24,27 @@ var kikimeterData = {
     'draw' :	'Match Nul',
     'team' :	'Équipe',
     'alive' :	'Vivant',
+    'bonus' :	'Bonus XP',
     'gainXP' :	'Gain XP',
     'gainTalent':'Gain Talent',
     'gainHabs' :'Gain Habs',
     'turnsPlayed':'Tours joués',
     'PT' :	'PT',
     'PM' :	'PM',
+    'actionsWeapon' : 'Tirs',
+    'actionsChip' : 'Usages Chips',
     'dmg_in' :	'Dégats reçus',
     'dmg_out' :	'Dégats infligés',
     'heal_in' :	'Soins reçus',
     'heal_out' :'Soins lancés',
     'fails' :	'Échecs',
-    'lastHits' :'Last Hits',
+    'lastHits' :'Kills',
     'blabla' :	'Blabla',
     'crashes' : 'Plantages'
 } ;
 
 // OBJET LEEK
-function Leek(leekId, name, level, XP, team, alive, gainXP, gainTalent, gainHabs) {
+function Leek(leekId, name, level, XP, team, alive, bonus, gainXP, gainTalent, gainHabs) {
     
     this.data = {} ;
     
@@ -57,6 +60,7 @@ function Leek(leekId, name, level, XP, team, alive, gainXP, gainTalent, gainHabs
     this.data['XP'] = XP ;
     this.data['team'] = team ;
     this.data['alive'] = alive ;
+    this.data['bonus'] = bonus ;
     this.data['gainXP'] = gainXP ;
     this.data['gainTalent'] = gainTalent ;
     this.data['gainHabs'] = gainHabs ;
@@ -83,23 +87,27 @@ function readTables()
             for (var j = 1; j < trs.length; j++) {
                 if (trs[j].className != 'total')
                 {
-                    var linkTab = trs[j].getElementsByTagName("a")[0].href.split('/');
+                    if (trs[j].children[2].getElementsByClassName('bonus').length ==1)
+                    {	var bonus = parseInt(trs[j].children[2].getElementsByClassName('bonus')[0].textContent.replace(/[^\d.]/g, ''))
+                    } else
+                    {	var bonus = 0 ;
+                    }
+                    var linkTab = trs[j].getElementsByTagName('a')[0].href.split('/');
                     var leekId = parseInt(linkTab[linkTab.length-1]) ;
                     //var output = color + trs[j].children[0].innerHTML + '</div>' ;
                     var name		= trs[j].children[0].textContent ;
                     var alive		=(trs[j].children[0].children[0].className == 'alive') ? 1 : 0 ;
                     var level		= parseInt(trs[j].children[1].textContent.replace(/[^\d.]/g, '')) ;
-					var gainXP		= parseInt(trs[j].children[2].children[1].textContent.replace(/[^\d.]/g, '')) ;
+                    var gainXP		= parseInt(trs[j].children[2].children[1].textContent.replace(/[^\d.]/g, '')) ;
                     var gainTalent	= parseInt(trs[j].children[3].textContent.replace(/[^\d.]/g, '')) ;
                     var gainHabs	= parseInt(trs[j].children[4].textContent.replace(/[^\d.]/g, '')) ;
                     var XP = parseInt(document.getElementById('tt_'+trs[j].children[2].children[0].id).textContent.split('/')[0].replace(/[^\d.]/g, ''));
                     
-                    leeks[trs[j].children[0].textContent] = new Leek(leekId, name, level, XP, team, alive, gainXP, gainTalent, gainHabs) ;
+                    leeks[trs[j].children[0].textContent] = new Leek(leekId, name, level, XP, team, alive, bonus, gainXP, gainTalent, gainHabs) ;
                     a = false ;
                 }
             }
         }
-        
     }
 }
 
@@ -111,13 +119,15 @@ function readActions()
     for(var i=0; i<actions.length; i++) {
         
         // VARIABLES UTILES POUR LES ACTIONS DE PLUSIEURS LIGNES
-        if (/^([^\s]+) tire/.test(actions[i].textContent)) {
+        if (/^([^\s]+) tire$/.test(actions[i].textContent)) {
             var attacker = RegExp.$1 ;
             var attackerWeapon = RegExp.$1 ;
+            leeks[attacker].addToData('actionsWeapon', 1) ;
         }
         if (/^([^\s]+) lance [^\s]+$/.test(actions[i].textContent)) {
             var attacker = RegExp.$1 ;
             var attackerChip = RegExp.$1 ;
+            leeks[attacker].addToData('actionsChip', 1) ;
         }
         
         // TOUR
@@ -150,9 +160,11 @@ function readActions()
         // ECHEC
         if (/^([^\s]+) tire... Échec !$/.test(actions[i].textContent)) {
             leeks[RegExp.$1].addToData('fails', 1) ;
+            leeks[RegExp.$1].addToData('actionsWeapon', 1) ;
         }
         if (/^([^\s]+) lance [^\s]+... Échec !$/.test(actions[i].textContent)) {
             leeks[RegExp.$1].addToData('fails', 1) ;
+            leeks[RegExp.$1].addToData('actionsChip', 1) ;
         }
         
         // MORT

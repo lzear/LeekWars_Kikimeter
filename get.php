@@ -1,5 +1,4 @@
 <?php
-
 /*
 --
 -- Structure de la table `leekwars_data`
@@ -13,14 +12,17 @@ CREATE TABLE IF NOT EXISTS `leekwars_data` (
   `draw` int(11) NOT NULL,
   `team` int(11) NOT NULL,
   `alive` int(11) NOT NULL,
+  `bonus` int(11) NOT NULL,
   `level` int(11) NOT NULL,
   `XP` int(11) NOT NULL,
   `gainXP` int(11) NOT NULL,
   `gainTalent` int(11) NOT NULL,
   `gainHabs` int(11) NOT NULL,
   `turnsPlayed` int(11) NOT NULL,
-  `PT` int(11) NOT NULL,
   `PM` int(11) NOT NULL,
+  `PT` int(11) NOT NULL,
+  `actionsWeapon` int(11) NOT NULL,
+  `actionsChip` int(11) NOT NULL,
   `dmg_in` int(11) NOT NULL,
   `dmg_out` int(11) NOT NULL,
   `heal_in` int(11) NOT NULL,
@@ -29,7 +31,9 @@ CREATE TABLE IF NOT EXISTS `leekwars_data` (
   `lastHits` int(11) NOT NULL,
   `blabla` int(11) NOT NULL,
   `crashes` int(11) NOT NULL,
-  PRIMARY KEY (`id`)
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `ukey` (`fightId`, `leekId`, `team`),
+  KEY `id` (`id`)
 ) ENGINE=MyISAM DEFAULT CHARSET=latin1 AUTO_INCREMENT=1 ;
 */
 
