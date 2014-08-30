@@ -8,9 +8,9 @@ kikimeter.js
 
 script JavaScript pour TamperMonkey ou GreaseMonkey.
   
-  Affiche un tableau de résumé des combats.
+  Affiche un tableau de résumé des combats et une série de hauts faits.
   
-  Si un(e?) URL vers le fichier **get.php** est défini(e), le script envoie les données du combat au format JSON via une requête POST.
+  Si une URL vers le fichier **get.php** est défini(e), le script envoie les données du combat au format JSON via une requête POST.
     
     
 get.php
@@ -32,3 +32,6 @@ Images
 -------
 ![tableau](http://i.imgur.com/EtnGsZm.png)
 ![sql](http://i.imgur.com/CLil5Rp.png)
+![Hauts Faits](http://i.imgur.com/flQfmGT.png)
+![Hauts Faits](http://i.imgur.com/FQP1NX1.png)
+![Hauts Faits](http://i.imgur.com/BTIfVWs.png)
