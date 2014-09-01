@@ -2,17 +2,44 @@
 // @name       		LeekWars : LeeKikiMeter
 // @description  	Ce script affiche un résumé des combats de leekwars
 // @match      		http://leekwars.com/report/*
-// @author			Elzéar
+// @author			Elzéar, yLark
 // @grant			none
 // ==/UserScript==
 
 
 // URL DE LA PAGE PHP QUI RECEPTIONNE LES DONNEES
-var dataReceiverURL = ''; // http:// TRUC /get.php
+var dataReceiverURL = ''; // http://<TRUC>/get.php
 
 // ÉDITER dispData POUR CHOISIR LES COLONNES À AFFICHER
 //var dispData = ['fightId','leekId','name','level','XP','draw','team','alive','bonus','gainXP','gainTalent','gainHabs','turnsPlayed','PT','PM','equipWeapon','actionsWeapon','actionsChip','dmg_in','dmg_out','heal_in','heal_out','fails','lastHits','blabla','crashes']; // <--- Toutes les données
-var dispData = ['team','turnsPlayed','PT','PM','actionsWeapon','actionsChip','dmg_in','dmg_out','heal_in','heal_out','fails','lastHits','blabla','crashes'];
+var dispData = [
+//	'fightId',
+//	'leekId',
+//	'name',
+	'level',
+	'turnsPlayed',
+	'PM',
+	'PT',
+//	'equipWeapon',
+//	'actionsWeapon',
+//	'actionsChip',
+	'dmg_in',
+	'dmg_out',
+	'heal_in',
+	'heal_out',
+//	'XP',
+//	'draw',
+//	'team',
+//	'alive',
+//	'bonus',
+	'gainXP',
+	'gainTalent',
+	'gainHabs',
+	'fails',
+	'lastHits',
+	'blabla',
+	'crashes'
+	];
 
 // intitulés des variables
 var kikimeterData = {
@@ -129,7 +156,7 @@ function readTables()
                     var alive		=(trs[j].children[0].children[0].className == 'alive') ? 1 : 0 ;
                     var level		= parseInt(trs[j].children[1].textContent.replace(/[^\d.]/g, '')) ;
                     var gainXP		= parseInt(trs[j].children[2].children[1].textContent.replace(/[^\d.]/g, '')) ;
-                    var gainTalent	= parseInt(trs[j].children[3].textContent.replace(/[^\d.]/g, '')) ;
+                    var gainTalent	= parseInt(trs[j].children[3].textContent.replace(/[^\-?\d.]/g, '')) ;
                     var gainHabs	= parseInt(trs[j].children[4].textContent.replace(/[^\d.]/g, '')) ;
                     var XP = parseInt(document.getElementById('tt_'+trs[j].children[2].children[0].id).textContent.split('/')[0].replace(/[^\d.]/g, ''));
                     
@@ -189,7 +216,6 @@ function readActions()
         
         // Arme équipée
         if (/^([^\s]+) prend l'arme [^\s]+$/.test(actions[i].textContent)) {
-            leeks[RegExp.$1].addToData('PT', 1) ;
             leeks[RegExp.$1].addToData('equipWeapon', 1) ;
         }
         

@@ -21,6 +21,7 @@ CREATE TABLE IF NOT EXISTS `leekwars_data` (
   `turnsPlayed` int(11) NOT NULL,
   `PM` int(11) NOT NULL,
   `PT` int(11) NOT NULL,
+  `equipWeapon` int(11) NOT NULL,
   `actionsWeapon` int(11) NOT NULL,
   `actionsChip` int(11) NOT NULL,
   `dmg_in` int(11) NOT NULL,
