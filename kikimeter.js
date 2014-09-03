@@ -15,11 +15,16 @@ var dataReceiverURL = ''; // http://<TRUC>/get.php
 var dispData = [
 //	'fightId',
 //	'leekId',
+//	'team',
+//	'color',
+//	'draw',
 //	'name',
-	'level',
 	'turnsPlayed',
-	'PM',
+	'level',
+//	'XP',
+//	'alive',
 	'PT',
+	'PM',
 //	'equipWeapon',
 //	'actionsWeapon',
 //	'actionsChip',
@@ -27,16 +32,12 @@ var dispData = [
 	'dmg_out',
 	'heal_in',
 	'heal_out',
-//	'XP',
-//	'draw',
-//	'team',
-//	'alive',
-//	'bonus',
+	'lastHits',
 	'gainXP',
+//	'bonus',
 	'gainTalent',
 	'gainHabs',
 	'fails',
-	'lastHits',
 	'blabla',
 	'crashes'
 	];
@@ -45,17 +46,14 @@ var dispData = [
 var kikimeterData = {
     'fightId' : 'Fight ID',
     'leekId' :	'Leek ID',
+	'team' :	'Équipe',
+	'color' : 'Couleur',
+	'draw' :	'Match Nul',
     'name':		'Nom',
+	'turnsPlayed':'Tours joués',
     'level' :	'Niveau',
     'XP' :		'XP',
-    'draw' :	'Match Nul',
-    'team' :	'Équipe',
     'alive' :	'Vivant',
-    'bonus' :	'Bonus XP',
-    'gainXP' :	'Gain XP',
-    'gainTalent':'Gain Talent',
-    'gainHabs' :'Gain Habs',
-    'turnsPlayed':'Tours joués',
     'PT' :	'PT',
     'PM' :	'PM',
     'equipWeapon' : 'Armes équipées',    // Nombre de fois qu'une arme est équipée
@@ -65,8 +63,12 @@ var kikimeterData = {
     'dmg_out' :	'Dégats infligés',
     'heal_in' :	'Soins reçus',
     'heal_out' :'Soins lancés',
+	'lastHits' :'Kills',
+    'gainXP' :	'Gain XP',
+	'bonus' :	'Bonus XP',
+    'gainTalent':'Gain Talent',
+    'gainHabs' :'Gain Habs',
     'fails' :	'Échecs',
-    'lastHits' :'Kills',
     'blabla' :	'Blabla',
     'crashes' : 'Plantages'
 } ;
@@ -162,21 +164,20 @@ function readTables()
             for (var j = 1; j < trs.length; j++) {
                 if (trs[j].className != 'total')
                 {
-                    if (trs[j].children[2].getElementsByClassName('bonus').length ==1)
-                    {	var bonus = parseInt(trs[j].children[2].getElementsByClassName('bonus')[0].textContent.replace(/[^\d.]/g, ''))
+                    if (trs[j].getElementsByClassName('xp')[0].getElementsByClassName('bonus').length ==1)
+                    {	var bonus = parseInt(trs[j].getElementsByClassName('xp')[0].getElementsByClassName('bonus')[0].textContent.replace(/[^\d.]/g, ''))
                     } else
                     {	var bonus = 0 ;
                     }
                     var linkTab     = trs[j].getElementsByTagName('a')[0].href.split('/');
                     var leekId      = parseInt(linkTab[linkTab.length-1]) ;
-                    //var output = color + trs[j].children[0].innerHTML + '</div>' ;
-                    var name        = trs[j].children[0].textContent ;
-                    var alive       = (trs[j].children[0].children[0].className == 'alive') ? 1 : 0 ;
-                    var level       = parseInt(trs[j].children[1].textContent.replace(/[^\d.]/g, '')) ;
-                    var gainXP      = parseInt(trs[j].children[2].children[1].textContent.replace(/[^\d.]/g, '')) ;
-                    var gainTalent  = parseInt(trs[j].children[3].textContent.replace(/[^\-?\d.]/g, '')) ;
-                    var gainHabs    = parseInt(trs[j].children[4].textContent.replace(/[^\d.]/g, '')) ;
-                    var XP          = parseInt(document.getElementById('tt_'+trs[j].children[2].children[0].id).textContent.split('/')[0].replace(/[^\d.]/g, ''));
+                    var name        = trs[j].getElementsByClassName('name')[0].textContent ;
+                    var alive       = (trs[j].getElementsByClassName('name')[0].children[0].className == 'alive') ? 1 : 0 ;
+                    var level       = parseInt(trs[j].getElementsByClassName('level')[0].textContent.replace(/[^\d.]/g, '')) ;
+                    var gainXP      = parseInt(trs[j].getElementsByClassName('xp')[0].children[1].textContent.replace(/[^\d.]/g, '')) ;
+                    var gainTalent  = parseInt(trs[j].getElementsByClassName('talent')[0].textContent.replace(/[^\-?\d.]/g, '')) ;
+                    var gainHabs    = parseInt(trs[j].getElementsByClassName('money')[0].children[0].firstChild.textContent.replace(/[^\d.]/g, '')) ;
+                    var XP          = parseInt(document.getElementById('tt_'+trs[j].getElementsByClassName('xp')[0].children[0].id).textContent.split('/')[0].replace(/[^\d.]/g, ''));
                     
                     leeks[name] = new Leek(leekId, name, level, XP, team, alive, bonus, gainXP, gainTalent, gainHabs) ;
                     a = false ;
