@@ -647,6 +647,21 @@ function displayHighlights() {
 }
 
 
+//	Permet de trier les tableaux en appelant le script présenté ici : http://www.kryogenix.org/code/browser/sorttable
+function make_tables_sortable() {
+    var s = document.createElement('script');
+    s.src = 'http://kryogenix.org/code/browser/sorttable/sorttable.js';
+    s.onload = function(){
+        sorttable.init();
+        Array.prototype.slice.call(document.getElementsByTagName('table')).forEach(
+           function(t){
+              sorttable.makeSortable(t);
+           }
+        )
+    };
+    document.getElementsByTagName('head')[0].appendChild(s);
+}
+
 
 // Truc AJAX pour envoyer les données à la page PHP
 function getXMLHttpRequest() {
@@ -694,6 +709,9 @@ displayHighlights() ;
 
 //		MISE EN COULEUR DU NOM DES POIREAUX DANS LE RAPPORT GÉNÉRAL
 colorize_report_general();
+
+//		PERMET DE TRIER LES TABLEAUX EN CLIQUANT SUR L'ENTÊTE
+make_tables_sortable();
 
 //		ENVOI DES DONNEES SUR UNE PAGE DISTANTE
 if (dataReceiverURL != '')
