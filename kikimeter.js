@@ -716,9 +716,13 @@ make_tables_sortable();
 //		ENVOI DES DONNEES SUR UNE PAGE DISTANTE
 if (dataReceiverURL != '')
 {
+	// suppression des données non attendues en BDD
+	for (var j in leeks) {
+		delete leeks[j].data['color'] ;
+	}
+	
     var json = 'json=' + JSON.stringify( leeks );	// mise au format JSON
-    console.log(json) ;
-    
+	
     $.ajax({
         type : 'POST',
         url : dataReceiverURL,
