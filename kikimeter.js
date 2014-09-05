@@ -273,7 +273,7 @@ function readActions() {
         // SOINS
         if (/^([^\s]+) gagne ([0-9]+) PV$/.test(actions[i].textContent)) {
             leeks[RegExp.$1].addToData('heal_in', parseInt(RegExp.$2.replace(/[^\d.]/g, ''))) ;
-            leeks[attackerChip].addToData('heal_out', parseInt(RegExp.$2.replace(/[^\d.]/g, ''))) ;
+            leeks[attacker].addToData('heal_out', parseInt(RegExp.$2.replace(/[^\d.]/g, ''))) ;
         }
         
         // ARME ÉQUIPÉE
@@ -748,6 +748,8 @@ if (dataReceiverURL != '')
 {
 	// suppression des données non attendues en BDD
 	for (var j in leeks) {
+		delete leeks[j].data['leekFightId'] ;
+		delete leeks[j].data['PTperTurn'] ;
 		delete leeks[j].data['color'] ;
 	}
 	
