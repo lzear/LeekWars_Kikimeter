@@ -1,5 +1,6 @@
 // ==UserScript==
 // @name       		LeekWars : LeeKikiMeter
+// @version		0.01
 // @description  	Ce script affiche un résumé des combats de leekwars
 // @match      		http://leekwars.com/report/*
 // @author			Elzéar, yLark
