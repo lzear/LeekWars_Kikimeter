@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name       		LeekWars : LeeKikiMeter
-// @version		0.01
+// @version			0.0.1
 // @description  	Ce script affiche un résumé des combats de leekwars
 // @match      		http://leekwars.com/report/*
 // @author			Elzéar, yLark
@@ -78,6 +78,22 @@ var kikimeterData = {
     'crashes' : 'Plantages'
 } ;
 
+// OBJET CURRENTFIGHT
+function Fight() {
+	
+	var urlTab =  document.URL.split('/');
+	this.fightId = parseInt(urlTab[urlTab.length-1]) ;
+	
+	this.teamFight = (document.getElementById('report-general').getElementsByClassName('report').length > 2) ? 1 : 0 ;
+	this.draw = (document.getElementsByTagName('h3')[0].textContent == 'Équipe 1') ? 1 : 0 ;
+	this.bonus = (document.getElementsByClassName('bonus').length > 0) ? parseInt(document.getElementsByClassName('bonus')[0].textContent.replace(/[^\d.]/g, '')) : 1 ;
+	this.leeks = {} ;
+	this.teams = {} ;
+	
+	this.addLeek = function(leekFightId, leekId, name, level, XP, team, alive, gainXP, gainTalent, gainHabs) {
+		this.leeks[name] = new Leek(leekFightId, leekId, name, level, XP, team, alive, gainXP, gainTalent, gainHabs) ;
+	}
+}
 
 // OBJET LEEK
 function Leek(leekFightId, leekId, name, level, XP, team, alive, bonus, gainXP, gainTalent, gainHabs) {
@@ -110,8 +126,14 @@ function Leek(leekFightId, leekId, name, level, XP, team, alive, bonus, gainXP, 
         this.data[dataName] = value ;
     } ;
 }
-	
-function leeksAllData(dataName) {	// Retourne un tableau contenant la propriété dataName de tous les poireaux
+
+// Retourne le type de combat (solo / team)
+function getFightType() {
+
+}
+
+// Retourne un tableau contenant la propriété dataName de tous les poireaux
+function leeksAllData(dataName) {	
 	var allData = [];
 	for(var leek in leeks){
 		allData[leek] = leeks[leek].data[dataName];
@@ -162,6 +184,7 @@ function getTeamLeekCount(team_number) {
     return nb_leeks;
 }
 
+
 // Lit les tableaux d'équipes
 function readTables() {
     var report_tables = document.getElementById('report-general').getElementsByTagName('table') ; 
@@ -170,20 +193,14 @@ function readTables() {
 	var leekFightId = 0 ;	// Numéro unique du poireau dans le cadre de ce combat
     for (var i = 0; i < report_tables.length; i++) {
         
-        if((i+report_tables.length != 4) && (i+report_tables.length != 6))
+        if((!currentFight.teamFight) || (i == 1) || (i == 3))
         {
             team++ ;
-            var color = team ? '<div style="background-color:#A0A0EC;">' : '<div style="background-color:#ECA0A0;">' ;
             var trs = report_tables[i].children[0].children ;
             
             for (var j = 1; j < trs.length; j++) {
                 if (trs[j].className != 'total')
                 {
-                    if (trs[j].getElementsByClassName('xp')[0].getElementsByClassName('bonus').length ==1)
-                    {	var bonus = parseInt(trs[j].getElementsByClassName('xp')[0].getElementsByClassName('bonus')[0].textContent.replace(/[^\d.]/g, ''))
-                    } else
-                    {	var bonus = 0 ;
-                    }
                     var linkTab     = trs[j].getElementsByTagName('a')[0].href.split('/');
                     var leekId      = parseInt(linkTab[linkTab.length-1]) ;		// Numéro du poireau dans le jeu
                     var name        = trs[j].getElementsByClassName('name')[0].textContent ;
@@ -194,7 +211,7 @@ function readTables() {
                     var gainHabs    = parseInt(trs[j].getElementsByClassName('money')[0].children[0].firstChild.textContent.replace(/[^\d.]/g, '')) ;
                     var XP          = parseInt(document.getElementById('tt_'+trs[j].getElementsByClassName('xp')[0].children[0].id).textContent.split('/')[0].replace(/[^\d.]/g, ''));
                     
-                    leeks[name] = new Leek(leekFightId, leekId, name, level, XP, team, alive, bonus, gainXP, gainTalent, gainHabs) ;
+                    currentFight.leeks[name] = new Leek(leekFightId, leekId, name, level, XP, team, alive, gainXP, gainTalent, gainHabs) ;
                     a = false ;
 					leekFightId++ ;
                 }
@@ -234,8 +251,13 @@ function colorize_report_general() {
 function readActions() {
     var actions = document.getElementById('actions').children;
     
-    for(var i=0; i<actions.length; i++) {
-        
+	for (var i in actions)
+	{
+		// NUMERO DE TOUR
+		if (/^Tour ([0-9]+)$/.test(actions[i].textContent)) {
+			var round = RegExp.$1 ;
+		}
+		
         // VARIABLES UTILES POUR LES ACTIONS DE PLUSIEURS LIGNES
         if (/^([^\s]+) tire$/.test(actions[i].textContent)) {
             var attacker = RegExp.$1 ;
@@ -248,7 +270,7 @@ function readActions() {
             leeks[attacker].addToData('actionsChip', 1) ;
         }
         
-        // TOUR
+        // TOUR DE [LEEKNAME]
         if (/^Tour de ([^\s]+)$/.test(actions[i].textContent)) {
             leeks[RegExp.$1].addToData('turnsPlayed', 1) ;
             leeks[RegExp.$1].writeData('color', actions[i].children[0].style.color) ;   // Récupère et stock la couleur du poireau
@@ -718,10 +740,7 @@ function getXMLHttpRequest() {
 
 
 
-
-
-//		LISTE DES POIREAUX
-var leeks = {} ;
+var currentFight = new Fight() ;
 
 //		LECTURE DES TABLEAUX
 readTables() ;
