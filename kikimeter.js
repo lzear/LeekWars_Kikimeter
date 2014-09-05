@@ -4,15 +4,16 @@
 // @match      		http://leekwars.com/report/*
 // @author			Elzéar, yLark
 // @grant			none
+// @projectPage		https://github.com/Zear06/LeekWars_Kikimeter
 // ==/UserScript==
 
 
-// URL DE LA PAGE PHP QUI RECEPTIONNE LES DONNEES
+// URL DE LA PAGE PHP QUI RÉCEPTIONNE LES DONNÉES
 var dataReceiverURL = ''; // http://<TRUC>/get.php
 
 // ÉDITER dispData POUR CHOISIR LES COLONNES À AFFICHER
-//var dispData = ['fightId','leekId','name','level','XP','draw','team','alive','bonus','gainXP','gainTalent','gainHabs','turnsPlayed','PT','PM','equipWeapon','actionsWeapon','actionsChip','dmg_in','dmg_out','heal_in','heal_out','fails','lastHits','blabla','crashes']; // <--- Toutes les données
 var dispData = [
+//	'leekFightId',
 //	'fightId',
 //	'leekId',
 //	'team',
@@ -24,6 +25,7 @@ var dispData = [
 //	'XP',
 //	'alive',
 	'PT',
+	'PTperTurn',
 	'PM',
 //	'equipWeapon',
 //	'actionsWeapon',
@@ -42,12 +44,13 @@ var dispData = [
 	'crashes'
 	];
 
-// intitulés des variables
+// Intitulés des variables
 var kikimeterData = {
+	'leekFightId' : 'Leek Fight ID',
     'fightId' : 'Fight ID',
     'leekId' :	'Leek ID',
 	'team' :	'Équipe',
-	'color' : 'Couleur',
+	'color' : 'Couleur',				// Couleur du poireau
 	'draw' :	'Match Nul',
     'name':		'Nom',
 	'turnsPlayed':'Tours joués',
@@ -55,6 +58,7 @@ var kikimeterData = {
     'XP' :		'XP',
     'alive' :	'Vivant',
     'PT' :	'PT',
+	'PTperTurn' : 'PT/tour',
     'PM' :	'PM',
     'equipWeapon' : 'Armes équipées',    // Nombre de fois qu'une arme est équipée
     'actionsWeapon' : 'Tirs',            // Nombre de tirs
@@ -73,8 +77,9 @@ var kikimeterData = {
     'crashes' : 'Plantages'
 } ;
 
+
 // OBJET LEEK
-function Leek(leekId, name, level, XP, team, alive, bonus, gainXP, gainTalent, gainHabs) {
+function Leek(leekFightId, leekId, name, level, XP, team, alive, bonus, gainXP, gainTalent, gainHabs) {
     
     this.data = {} ;
     
@@ -82,6 +87,7 @@ function Leek(leekId, name, level, XP, team, alive, bonus, gainXP, gainTalent, g
         this.data[key] = 0 ;
     }
     var urlTab =  document.URL.split('/');
+	this.data['leekFightId'] = leekFightId ;
     this.data['fightId'] = parseInt(urlTab[urlTab.length-1]) ;
     this.data['draw'] = (document.getElementsByTagName('h3')[0].textContent == 'Équipe 1') ? 1 : 0 ;
     this.data['leekId'] = leekId ;
@@ -95,13 +101,25 @@ function Leek(leekId, name, level, XP, team, alive, bonus, gainXP, gainTalent, g
     this.data['gainTalent'] = gainTalent ;
     this.data['gainHabs'] = gainHabs ;
     
-    this.addToData = function(dataName, value) {
+	get: this.TPperTurn = function() {
+		return this.data['TP'] / this.data['turnsPlayed'];
+	} ;
+	
+    this.addToData = function(dataName, value) {	// Incrémente une valeur
         this.data[dataName] += value ;
     } ;
     
-    this.writeData = function(dataName, value) {
+    this.writeData = function(dataName, value) {	// Initialise une valeur
         this.data[dataName] = value ;
     } ;
+}
+	
+function leeksAllData(dataName) {	// Retourne un tableau contenant la propriété dataName de tous les poireaux
+	var allData = [];
+	for(var leek in leeks){
+		allData[leek] = leeks[leek].data[dataName];
+	}
+	return allData;
 }
 
 // Retourne la somme d'une datas d'une équipe
@@ -129,7 +147,7 @@ function fightSum(dataName) {
 }
 
 // Retourne le nombre de leeks ayant participé au combat
-function getLeekCount(){
+function getLeekCount() {
     var nb_leeks = 0;
     for(var j in leeks){
         nb_leeks++;
@@ -138,7 +156,7 @@ function getLeekCount(){
 }
 
 // Retourne le nombre de leeks d'une équipe ayant participé au combat
-function getTeamLeekCount(team_number){
+function getTeamLeekCount(team_number) {
     var nb_leeks = 0;
     for(var j in leeks){
         if(leeks[j].data['team'] == team_number)
@@ -148,11 +166,11 @@ function getTeamLeekCount(team_number){
 }
 
 // Lit les tableaux d'équipes
-function readTables()
-{
+function readTables() {
     var report_tables = document.getElementById('report-general').getElementsByTagName('table') ; 
     var a = true ;
     var team = 0 ;
+	var leekFightId = 0 ;	// Numéro unique du poireau dans le cadre de ce combat
     for (var i = 0; i < report_tables.length; i++) {
         
         if((i+report_tables.length != 4) && (i+report_tables.length != 6))
@@ -170,7 +188,7 @@ function readTables()
                     {	var bonus = 0 ;
                     }
                     var linkTab     = trs[j].getElementsByTagName('a')[0].href.split('/');
-                    var leekId      = parseInt(linkTab[linkTab.length-1]) ;
+                    var leekId      = parseInt(linkTab[linkTab.length-1]) ;		// Numéro du poireau dans le jeu
                     var name        = trs[j].getElementsByClassName('name')[0].textContent ;
                     var alive       = (trs[j].getElementsByClassName('name')[0].children[0].className == 'alive') ? 1 : 0 ;
                     var level       = parseInt(trs[j].getElementsByClassName('level')[0].textContent.replace(/[^\d.]/g, '')) ;
@@ -179,15 +197,16 @@ function readTables()
                     var gainHabs    = parseInt(trs[j].getElementsByClassName('money')[0].children[0].firstChild.textContent.replace(/[^\d.]/g, '')) ;
                     var XP          = parseInt(document.getElementById('tt_'+trs[j].getElementsByClassName('xp')[0].children[0].id).textContent.split('/')[0].replace(/[^\d.]/g, ''));
                     
-                    leeks[name] = new Leek(leekId, name, level, XP, team, alive, bonus, gainXP, gainTalent, gainHabs) ;
+                    leeks[name] = new Leek(leekFightId, leekId, name, level, XP, team, alive, bonus, gainXP, gainTalent, gainHabs) ;
                     a = false ;
+					leekFightId++ ;
                 }
             }
         }
     }
 }
 
-// Recolorise le nom des leeks dans le rapport général. Reprend la structure et la démarche de readTables()
+// Recolorise le nom des leeks dans le rapport général. Reprend la structure et la démarche de la fonction readTables()
 function colorize_report_general() {
     var report_tables = document.getElementById('report-general').getElementsByTagName('table') ; 
     
@@ -215,8 +234,7 @@ function colorize_report_general() {
 }
 
 // Lit la liste des actions
-function readActions()
-{
+function readActions() {
     var actions = document.getElementById('actions').children;
     
     for(var i=0; i<actions.length; i++) {
@@ -242,6 +260,7 @@ function readActions()
         // PT
         if (/^([^\s]+) perd ([0-9]+) PT$/.test(actions[i].textContent)) {
             leeks[RegExp.$1].addToData('PT', parseInt(RegExp.$2)) ;
+			leeks[RegExp.$1].writeData('PTperTurn',  leeks[RegExp.$1].data['PT'] / leeks[RegExp.$1].data['turnsPlayed']) ;
         }
         
         // PM
@@ -261,7 +280,7 @@ function readActions()
             leeks[attackerChip].addToData('heal_out', parseInt(RegExp.$2.replace(/[^\d.]/g, ''))) ;
         }
         
-        // Arme équipée
+        // ARME ÉQUIPÉE
         if (/^([^\s]+) prend l'arme [^\s]+$/.test(actions[i].textContent)) {
             leeks[RegExp.$1].addToData('equipWeapon', 1) ;
         }
@@ -294,12 +313,12 @@ function readActions()
 }
 
 // Affiche le tableau de résumé
-function displayKikimeter()
-{
+function displayKikimeter() {
     var table = document.createElement('table');
     table.className = 'report' ;
     
-    var tbody = document.createElement('tbody');
+	// thead
+    var thead = document.createElement('thead');
     
     var tr = document.createElement('tr');
     
@@ -313,8 +332,12 @@ function displayKikimeter()
         tr.appendChild(th) ;
     }
     
-    tbody.appendChild(tr) ;
+    thead.appendChild(tr) ;
+	table.appendChild(thead) ;
     
+	// tbody
+	var tbody = document.createElement('tbody');
+	
     for (var j in leeks) {
         tr = document.createElement('tr');
         
@@ -344,14 +367,18 @@ function displayKikimeter()
         for (var i in dispData)	{
             
             td = document.createElement('td');
-            td.appendChild(document.createTextNode(leeks[j].data[dispData[i]]));
+            td.appendChild(document.createTextNode(Math.round(leeks[j].data[dispData[i]]*10)/10));
             tr.appendChild(td) ;
         }
         
         tbody.appendChild(tr) ;
     }
+	table.appendChild(tbody) ;
     
+	// tfoot
     // Affichage des sommes du combat
+	var tfoot = document.createElement('tfoot');
+	
     tr = document.createElement('tr');
     tr.className = 'total' ;
 
@@ -369,210 +396,159 @@ function displayKikimeter()
     for (var i in dispData)	{
 
         td = document.createElement('td');
-        td.appendChild(document.createTextNode( fightSum(dispData[i]) ));
+        td.appendChild(document.createTextNode( Math.round(fightSum(dispData[i])*10)/10 ));
         tr.appendChild(td) ;
     }
-
-    tbody.appendChild(tr) ;
+	
+    tfoot.appendChild(tr) ;
+	table.appendChild(tfoot) ;
     // Fin affichage des sommes du combat
-    
-    table.appendChild(tbody) ;
     
     var resume = document.createElement('div');
     resume.id = 'report-resume' ;
     
+	// Création du titre au-dessus du tableau
     var h1 = document.createElement('h1');
     h1.appendChild(document.createTextNode('Résumé'));
     document.body.appendChild(h1);
     resume.appendChild(h1);
     resume.appendChild(table);
     
-    var page=document.getElementById('page');
-    page.insertBefore(resume, page.children[3]);
+	// Insertion du tableau dans le DOM
+    var page = document.getElementById('page');
+	var report_actions = document.getElementById('report-actions');
+    page.insertBefore(resume, report_actions);
 }
-
-
-
-
 
 // OBJET HIGHLIGHT (fait marquant, ou trophée)
 function Highlight(img, title, description, message) {
-    
-    this.data = {} ;
-    
-    this.data['img'] = img ;
-    this.data['title'] = title ;
-    this.data['description'] = description ;
-    this.data['message'] = message ;
+    this.img = img ;
+    this.title = title ;
+    this.description = description ;
+    this.message = message ;
+}
+
+function getBestLeek(dataName, maxOrMin) {	// Utile uniquement dans le cadre de la fonction generateHighlights()
+	var BestLeek = null;
+    var draw = false;
+	var threshold;
+	if(maxOrMin == 'max'){
+		threshold = mean(leeksAllData(dataName)) + (0.18*getLeekCount()+0.34) * stdev(leeksAllData(dataName));	// Seuil défini en fonction de la moyenne des valeurs, de l'écart type et du nombre de poireaux impliqués dans le combat
+	}else{
+		threshold = mean(leeksAllData(dataName)) - (0.18*getLeekCount()+0.34) * stdev(leeksAllData(dataName));
+	}
+	for (var j in leeks) {
+        if(BestLeek != null && leeks[j].data[dataName] == leeks[BestLeek].data[dataName]){
+             draw = true;
+        }
+        if(BestLeek == null || (leeks[j].data[dataName] > leeks[BestLeek].data[dataName] && maxOrMin == 'max')
+							|| (leeks[j].data[dataName] < leeks[BestLeek].data[dataName] && maxOrMin == 'min') ){
+            BestLeek = j;
+            draw = false;
+        }
+    }
+	if(draw == true || (leeks[BestLeek].data[dataName] < threshold && maxOrMin == 'max')		// S'il y a égalité avec un autre poireau, ou si la valeur ne dépasse pas un certain seuil remarquable, le highlight ne sera pas affiché
+					|| (leeks[BestLeek].data[dataName] > threshold && maxOrMin == 'min')
+					|| leeks[BestLeek].data[dataName] == 1)	// Si la valeur vaut 1, ça n'est pas suffisamment exceptionnel
+		BestLeek = null;
+	return BestLeek;
 }
 
 // Génère les highlights
 function generateHighlights() {
     
     // Tueur
-    var BestLeek = null;
-    var draw = false;
-    for (var j in leeks) {
-        if(BestLeek != null && leeks[j].data['lastHits'] == leeks[BestLeek].data['lastHits']){
-             draw = true;
-        }
-        if(BestLeek == null || leeks[j].data['lastHits'] > leeks[BestLeek].data['lastHits']){
-            BestLeek = j;
-            draw = false;
-        }
-    }
-    if(draw == false && leeks[BestLeek].data['lastHits'] > fightSum('lastHits')*0.4 && fightSum('lastHits') > 1){
+    var BestLeek = getBestLeek('lastHits', 'max');
+    if(BestLeek != null){
         Highlights['tueur'] = new Highlight('http://static.leekwars.com/image/trophy/feller.png', 'Tueur', '<span style="color:' + leeks[BestLeek].data['color'] + ';">' + leeks[BestLeek].data['name'] + '</span> a tué ' + leeks[BestLeek].data['lastHits'] + ' poireaux', 'Soit ' + Math.round(leeks[BestLeek].data['lastHits'] / fightSum('lastHits') * 100) + ' % des tués');
     }
     
     // Guerrier
-    var BestLeek = null;
-    var draw = false;
-    for (var j in leeks) {
-        if(BestLeek != null && leeks[j].data['dmg_out'] == leeks[BestLeek].data['dmg_out']){
-             draw = true;
-        }
-        if(BestLeek == null || leeks[j].data['dmg_out'] > leeks[BestLeek].data['dmg_out']){
-            BestLeek = j;
-            draw = false;
-        }
-    }
-    if(draw == false && leeks[BestLeek].data['dmg_out'] > fightSum('dmg_out')*0.3){
+    var BestLeek = getBestLeek('dmg_out', 'max');
+    if(BestLeek != null){
         Highlights['guerrier'] = new Highlight('http://static.leekwars.com/image/trophy/fighter.png', 'Guerrier', '<span style="color:' + leeks[BestLeek].data['color'] + ';">' + leeks[BestLeek].data['name'] + '</span> a infligé ' + leeks[BestLeek].data['dmg_out'] + ' dégâts', 'Soit ' + Math.round(leeks[BestLeek].data['dmg_out'] / fightSum('dmg_out') * 100) + ' % des dégâts');
     }
     
     // Médecin
-    var BestLeek = null;
-    var draw = false;
-    for (var j in leeks) {
-        if(BestLeek != null && leeks[j].data['heal_out'] == leeks[BestLeek].data['heal_out']){
-             draw = true;
-        }
-        if(BestLeek == null || leeks[j].data['heal_out'] > leeks[BestLeek].data['heal_out']){
-            BestLeek = j;
-            draw = false;
-        }
-    }
-    if(draw == false && leeks[BestLeek].data['heal_out'] > fightSum('heal_out')*0.3){
+    var BestLeek = getBestLeek('heal_out', 'max');
+    if(BestLeek != null){
         Highlights['medecin'] = new Highlight('http://static.leekwars.com/image/trophy/carapace.png', 'Médecin', '<span style="color:' + leeks[BestLeek].data['color'] + ';">' + leeks[BestLeek].data['name'] + '</span> a soigné ' + leeks[BestLeek].data['heal_out'] + ' PV', 'Soit ' + Math.round(leeks[BestLeek].data['heal_out'] / fightSum('heal_out') * 100) + ' % des soins');
     }
     
     // Bavard
-    var BestLeek = null;
-    var draw = false;
-    for (var j in leeks) {
-        if(BestLeek != null && leeks[j].data['blabla'] == leeks[BestLeek].data['blabla']){
-             draw = true;
-        }
-        if(BestLeek == null || leeks[j].data['blabla'] > leeks[BestLeek].data['blabla']){
-            BestLeek = j;
-            draw = false;
-        }
-    }
-    if(draw == false && leeks[BestLeek].data['blabla'] > fightSum('blabla')*0.5 && leeks[BestLeek].data['blabla'] > 4){
+    var BestLeek = getBestLeek('blabla', 'max');
+    if(BestLeek != null && leeks[BestLeek].data['blabla'] > 2){
         Highlights['bavard'] = new Highlight('http://static.leekwars.com/image/trophy/talkative.png', 'Bavard', '<span style="color:' + leeks[BestLeek].data['color'] + ';">' + leeks[BestLeek].data['name'] + '</span> a parlé ' + leeks[BestLeek].data['blabla'] + ' fois', 'Soit ' + Math.round(leeks[BestLeek].data['blabla'] / fightSum('blabla') * 100) + ' % de ce qui a été dit');
     }
     
     // Éphémère
-    var BestLeek = null;
-    var draw = false;
-    var maxTurns = 0;
-    for (var j in leeks) {
-        if(BestLeek != null && leeks[j].data['turnsPlayed'] == leeks[BestLeek].data['turnsPlayed']){
-             draw = true;
-        }
-        if(BestLeek == null || leeks[j].data['turnsPlayed'] < leeks[BestLeek].data['turnsPlayed']){
-            BestLeek = j;
-            draw = false;
-        }
-        if(leeks[j].data['turnsPlayed'] > maxTurns){
-            maxTurns = leeks[j].data['turnsPlayed'];
-        }
-    }
-    if(draw == false && leeks[BestLeek].data['turnsPlayed'] < maxTurns*0.4){
-        Highlights['ephemere'] = new Highlight('http://static.leekwars.com/image/trophy/gardener.png', 'Éphémère', '<span style="color:' + leeks[BestLeek].data['color'] + ';">' + leeks[BestLeek].data['name'] + '</span> n\'a survécu que ' + leeks[BestLeek].data['turnsPlayed'] + ' tours', 'Soit ' + Math.round(leeks[BestLeek].data['turnsPlayed'] / maxTurns * 100) + ' % du combat');
+    var BestLeek = getBestLeek('turnsPlayed', 'min');
+    if(BestLeek != null && leeks[BestLeek].data['turnsPlayed'] / max(leeksAllData('turnsPlayed'))*100 < 50 ){
+        Highlights['ephemere'] = new Highlight('http://static.leekwars.com/image/trophy/gardener.png', 'Éphémère', '<span style="color:' + leeks[BestLeek].data['color'] + ';">' + leeks[BestLeek].data['name'] + '</span> n\'a survécu que ' + leeks[BestLeek].data['turnsPlayed'] + ' tours', 'Soit ' + Math.round(leeks[BestLeek].data['turnsPlayed'] / max(leeksAllData('turnsPlayed')) * 100) + ' % du combat');
     }
     
     // Marcheur
-    var BestLeek = null;
-    var draw = false;
-    for (var j in leeks) {
-        if(BestLeek != null && leeks[j].data['PM'] == leeks[BestLeek].data['PM']){
-            draw = true;
-        }
-        if(BestLeek == null || leeks[j].data['PM'] > leeks[BestLeek].data['PM']){
-            BestLeek = j;
-            draw = false;
-        }
-    }
-    if(draw == false && leeks[BestLeek].data['PM'] > fightSum('PM')*0.5 && leeks[BestLeek].data['PM'] > 10){
+    var BestLeek = getBestLeek('PM', 'max');
+    if(BestLeek != null){
         Highlights['marcheur'] = new Highlight('http://static.leekwars.com/image/trophy/walker.png', 'Marcheur', '<span style="color:' + leeks[BestLeek].data['color'] + ';">' + leeks[BestLeek].data['name'] + '</span> a marché ' + leeks[BestLeek].data['PM'] + ' PM', 'Soit ' + Math.round(leeks[BestLeek].data['PM'] / fightSum('PM') * 100) + ' % des distances parcourues');
     }
     
     // Tireur
-    var BestLeek = null;
-    var draw = false;
-    for (var j in leeks) {
-        if(BestLeek != null && leeks[j].data['actionsWeapon'] == leeks[BestLeek].data['actionsWeapon']){
-            draw = true;
-        }
-        if(BestLeek == null || leeks[j].data['actionsWeapon'] > leeks[BestLeek].data['actionsWeapon']){
-            BestLeek = j;
-            draw = false;
-        }
-    }
-    if(draw == false && leeks[BestLeek].data['actionsWeapon'] > fightSum('actionsWeapon')*0.3 && leeks[BestLeek].data['actionsWeapon'] > 3){
+    var BestLeek = getBestLeek('actionsWeapon', 'max');
+    if(BestLeek != null){
         Highlights['tireur'] = new Highlight('http://static.leekwars.com/image/trophy/equipped.png', 'Tireur', '<span style="color:' + leeks[BestLeek].data['color'] + ';">' + leeks[BestLeek].data['name'] + '</span> a tiré ' + leeks[BestLeek].data['actionsWeapon'] + ' fois', 'Soit ' + Math.round(leeks[BestLeek].data['actionsWeapon'] / fightSum('actionsWeapon') * 100) + ' % des tirs');
     }
     
     // Malchanceux
-    var BestLeek = null;
-    var draw = false;
-    for (var j in leeks) {
-        if(BestLeek != null && leeks[j].data['fails'] == leeks[BestLeek].data['fails']){
-            draw = true;
-        }
-        if(BestLeek == null || leeks[j].data['fails'] > leeks[BestLeek].data['fails']){
-            BestLeek = j;
-            draw = false;
-        }
-    }
-    if(draw == false && leeks[BestLeek].data['fails'] > fightSum('fails')*0.3 && leeks[BestLeek].data['fails'] > 3){
+    var BestLeek = getBestLeek('fails', 'max');
+    if(BestLeek != null){
         Highlights['malchanceux'] = new Highlight('http://static.leekwars.com/image/trophy/lucky.png', 'Malchanceux', '<span style="color:' + leeks[BestLeek].data['color'] + ';">' + leeks[BestLeek].data['name'] + '</span> a subi ' + leeks[BestLeek].data['fails'] + ' échecs', 'Soit ' + Math.round(leeks[BestLeek].data['fails'] / fightSum('fails') * 100) + ' % des échecs');
     }
     
     // Magicien
-    var BestLeek = null;
-    var draw = false;
-    for (var j in leeks) {
-        if(BestLeek != null && leeks[j].data['actionsChip'] == leeks[BestLeek].data['actionsChip']){
-            draw = true;
-        }
-        if(BestLeek == null || leeks[j].data['actionsChip'] > leeks[BestLeek].data['actionsChip']){
-            BestLeek = j;
-            draw = false;
-        }
-    }
-    if(draw == false && leeks[BestLeek].data['actionsChip'] > fightSum('actionsChip')*0.3 && leeks[BestLeek].data['actionsChip'] > 3){
+    var BestLeek = getBestLeek('actionsChip', 'max');
+    if(BestLeek != null){
         Highlights['magicien'] = new Highlight('http://static.leekwars.com/image/trophy/wizard.png', 'Magicien', '<span style="color:' + leeks[BestLeek].data['color'] + ';">' + leeks[BestLeek].data['name'] + '</span> a utilisé des puces ' + leeks[BestLeek].data['actionsChip'] + ' fois', 'Soit ' + Math.round(leeks[BestLeek].data['actionsChip'] / fightSum('actionsChip') * 100) + ' % des puces');
     }
     
     // Buggé
+    var BestLeek = getBestLeek('crashes', 'max');
+    if(BestLeek != null){
+        Highlights['bugge'] = new Highlight('http://static.leekwars.com/image/trophy/breaker.png', 'Buggé', '<span style="color:' + leeks[BestLeek].data['color'] + ';">' + leeks[BestLeek].data['name'] + '</span> a planté ' + leeks[BestLeek].data['crashes'] + ' fois', 'Soit ' + Math.round(leeks[BestLeek].data['crashes'] / fightSum('crashes') * 100) + ' % des plantages');
+    }
+	
+	// Hyperactif
+    var BestLeek = getBestLeek('PTperTurn', 'max');
+    if(BestLeek != null && getLeekCount() > 2){
+        Highlights['hyperactif'] = new Highlight('http://static.leekwars.com/image/trophy/motivated.png', 'Hyperactif', '<span style="color:' + leeks[BestLeek].data['color'] + ';">' + leeks[BestLeek].data['name'] + '</span> a un ratio PT par tour de ' + Math.round(leeks[BestLeek].data['PTperTurn']*10)/10 , 'Soit ' + Math.round(leeks[BestLeek].data['PTperTurn'] / mean(leeksAllData('PTperTurn')) * 10)/10 + ' fois plus que la moyenne');
+    }
+	
+	// Glandeur
+    var BestLeek = getBestLeek('PTperTurn', 'min');
+    if(BestLeek != null && getLeekCount() > 2){
+        if(leeks[BestLeek].data['PTperTurn'] != 0) {
+			Highlights['glandeur'] = new Highlight('http://static.leekwars.com/image/trophy/literate.png', 'Glandeur', '<span style="color:' + leeks[BestLeek].data['color'] + ';">' + leeks[BestLeek].data['name'] + '</span> a un ratio PT par tour de ' + Math.round(leeks[BestLeek].data['PTperTurn']*10)/10 , 'Soit ' + Math.round(mean(leeksAllData('PTperTurn')) / leeks[BestLeek].data['PTperTurn'] * 10)/10 + ' fois moins que la moyenne');
+		}else{
+			Highlights['glandeur'] = new Highlight('http://static.leekwars.com/image/trophy/literate.png', 'Glandeur', '<span style="color:' + leeks[BestLeek].data['color'] + ';">' + leeks[BestLeek].data['name'] + '</span> a un ratio PT par tour de ' + Math.round(leeks[BestLeek].data['PTperTurn']*10)/10 , null);
+		}
+	}
+    
+	// Invincible
     var BestLeek = null;
     var draw = false;
     for (var j in leeks) {
-        if(BestLeek != null && leeks[j].data['crashes'] == leeks[BestLeek].data['crashes']){
+        if(BestLeek != null && leeks[j].data['dmg_in'] == leeks[BestLeek].data['dmg_in']){
             draw = true;
         }
-        if(BestLeek == null || leeks[j].data['crashes'] > leeks[BestLeek].data['crashes']){
+        if(BestLeek == null || leeks[j].data['dmg_in'] > leeks[BestLeek].data['dmg_in']){
             BestLeek = j;
             draw = false;
         }
     }
-    if(draw == false && leeks[BestLeek].data['crashes'] > fightSum('crashes')*0.5 && leeks[BestLeek].data['crashes'] > 2){
-        Highlights['bugge'] = new Highlight('http://static.leekwars.com/image/trophy/breaker.png', 'Buggé', '<span style="color:' + leeks[BestLeek].data['color'] + ';">' + leeks[BestLeek].data['name'] + '</span> a planté ' + leeks[BestLeek].data['crashes'] + ' fois', 'Soit ' + Math.round(leeks[BestLeek].data['crashes'] / fightSum('crashes') * 100) + ' % des plantages');
+    if(draw == false && leeks[BestLeek].data['dmg_in'] == 0){
+        Highlights['invincible'] = new Highlight('http://static.leekwars.com/image/trophy/unbeaten.png', 'Invincible', '<span style="color:' + leeks[BestLeek].data['color'] + ';">' + leeks[BestLeek].data['name'] + '</span> n\'a reçu aucun dégât', null);
     }
-    
+	
     // Survivant
     var BestLeek = null;
     var draw = false;
@@ -591,61 +567,62 @@ function generateHighlights() {
     
 }
 
-
 // Affiche les highlights
 function displayHighlights() {
     
-    generateHighlights();
+    generateHighlights();	// Génère les highlights avant des les insérer dans le DOM
     
-    if(Highlights.length != 'undefined'){
+    if(length(Highlights) > 0){
         var report_highlights = document.createElement('div');
         report_highlights.id = 'report-highlights' ;
-
+		
+		// Création du titre
         var h1 = document.createElement('h1');
         h1.appendChild(document.createTextNode('Hauts faits'));
         document.body.appendChild(h1);
         report_highlights.appendChild(h1);
 
-        for (var i in Highlights) {
-
+        for (var i in Highlights) {		// Boucle sur tous les highlights
+			
             var report_high = document.createElement('div');
             report_high.className = 'notif';
-
-            if(Highlights[i].data['img'] != null){
+			
+            if(Highlights[i].img != null){
                 var img = document.createElement('img');
-                img.src = Highlights[i].data['img'];
+                img.src = Highlights[i].img;
                 report_high.appendChild(img);
             }
-
-            if(Highlights[i].data['title'] != null){
+			
+            if(Highlights[i].title != null){
                 var title = document.createElement('div');
                 title.className = 'turn';
-                title.appendChild(document.createTextNode(Highlights[i].data['title']));
+                title.appendChild(document.createTextNode(Highlights[i].title));
                 report_high.appendChild(title);
             }
-
-            if(Highlights[i].data['description'] != null){
+			
+            if(Highlights[i].description != null){
                 var description = document.createElement('div');
                 description.className = 'action';
-                description.innerHTML = Highlights[i].data['description'];
+                description.innerHTML = Highlights[i].description;
                 report_high.appendChild(description);
             }
-
-            if(Highlights[i].data['message'] != null){
+			
+            if(Highlights[i].message != null){
                 var message = document.createElement('span');
                 message.className = 'date';
-                message.appendChild(document.createTextNode(Highlights[i].data['message']));
+                message.appendChild(document.createTextNode(Highlights[i].message));
                 report_high.appendChild(message);
             }
-
+			
             report_highlights.appendChild(report_high);
         }
 
+		// Insertion dans le DOM
         var page = document.getElementById('page');
-        page.insertBefore(report_highlights, page.children[4]);
+		var report_actions = document.getElementById('report-actions');
+		page.insertBefore(report_highlights, report_actions);
     }
 }
-
 
 //	Permet de trier les tableaux en appelant le script présenté ici : http://www.kryogenix.org/code/browser/sorttable
 function make_tables_sortable() {
@@ -660,6 +637,63 @@ function make_tables_sortable() {
         )
     };
     document.getElementsByTagName('head')[0].appendChild(s);
+}
+
+
+// FONCTIONS STATISTIQUES //
+// maximum of an array
+function max(arr) {
+	var max = null;
+	for(var i in arr){
+		if(arr[i] > max || max == null) max = arr[i];
+	}
+	return max;
+}
+// minimum of an array
+function min(arr) {
+	var min = null;
+	for(var i in arr){
+		if(arr[i] < min || min == null) min = arr[i];
+	}
+	return min;
+}
+// Taille réelle d'un tableau (arr.length n'est pas fiable)
+function length(arr){
+	var length = 0;
+	for(i in arr){
+		length++;
+	}
+	return length;
+}
+// sum of an array
+function sum(arr) {
+	var sum = 0;
+	for(var i in arr){
+		sum += arr[i];
+	}
+	return sum;
+}
+// mean value of an array
+function mean(arr) {
+	return sum(arr) / length(arr);
+}
+// sum of squared errors of prediction (SSE)
+function sumsqerr(arr) {
+	var sum = 0;
+	var tmp;
+	for (var i in arr) {
+		tmp = arr[i] - mean(arr);
+		sum += tmp * tmp;
+	}
+	return sum;
+}
+// variance of an array (for a population, not a sample)
+function variance(arr) {
+	return sumsqerr(arr) / (length(arr) - 1);
+}
+// standard deviation of an array
+function stdev(arr) {
+	return Math.sqrt(variance(arr));
 }
 
 
