@@ -516,7 +516,7 @@ function generateHighlights() {
 	// Hyperactif
     var BestLeek = getBestLeek('PTperTurn', 'max');
     if(BestLeek != null && getLeekCount() > 2){
-        Highlights['hyperactif'] = new Highlight('http://static.leekwars.com/image/trophy/motivated.png', 'Hyperactif', '<span style="color:' + leeks[BestLeek].data['color'] + ';">' + leeks[BestLeek].data['name'] + '</span> a un ratio PT par tour de ' + Math.round(leeks[BestLeek].data['PTperTurn']*10)/10 , 'Soit ' + Math.round(leeks[BestLeek].data['PTperTurn'] / mean(leeksAllData('PTperTurn')) * 10)/10 + ' fois plus que la moyenne');
+        Highlights['hyperactif'] = new Highlight('http://static.leekwars.com/image/trophy/motivated.png', 'Hyperactif', '<span style="color:' + leeks[BestLeek].data['color'] + ';">' + leeks[BestLeek].data['name'] + '</span> a un ratio de ' + Math.round(leeks[BestLeek].data['PTperTurn']*10)/10 + ' PT par tour', 'Soit ' + Math.round(leeks[BestLeek].data['PTperTurn'] / mean(leeksAllData('PTperTurn')) * 10)/10 + ' fois plus que la moyenne');
     }
 	
 	// Glandeur
