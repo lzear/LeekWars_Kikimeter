@@ -100,10 +100,6 @@ function Leek(leekFightId, leekId, name, level, XP, team, alive, bonus, gainXP, 
     this.data['gainXP'] = gainXP ;
     this.data['gainTalent'] = gainTalent ;
     this.data['gainHabs'] = gainHabs ;
-    
-	get: this.TPperTurn = function() {
-		return this.data['TP'] / this.data['turnsPlayed'];
-	} ;
 	
     this.addToData = function(dataName, value) {	// Incrémente une valeur
         this.data[dataName] += value ;
