@@ -3,27 +3,56 @@
 --
 -- Structure de la table `leekwars_data`
 --
-
+var serverFightData = [
+		'fightId',
+		'draw',
+		'bonus',
+		'nbRounds'
+		'leekId',
+		'name',
+		'team',
+		'alive',
+		'level',
+		'XP',
+		'gainXP',
+		'gainTalent',
+		'gainHabs',
+		'roundsPlayed',
+		'PT',
+		'PM',
+		'equipWeapon',
+		'actionsWeapon',
+		'actionsChip',
+		'dmg_in',
+		'dmg_out',
+		'heal_in',
+		'heal_out',
+		'fails',
+		'lastHits',
+		'blabla',
+		'crashes'
+	];
 CREATE TABLE IF NOT EXISTS `leekwars_data` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `fightId` int(11) NOT NULL,
+  `bonus` int(11) NOT NULL,
+  `draw` int(11) NOT NULL,
+  `nbRounds` int(11) NOT NULL,
+  `team` int(11) NOT NULL,
   `leekId` int(11) NOT NULL,
   `name` varchar(255) NOT NULL,
-  `draw` int(11) NOT NULL,
-  `team` int(11) NOT NULL,
-  `alive` int(11) NOT NULL,
-  `bonus` int(11) NOT NULL,
   `level` int(11) NOT NULL,
   `XP` int(11) NOT NULL,
   `gainXP` int(11) NOT NULL,
   `gainTalent` int(11) NOT NULL,
   `gainHabs` int(11) NOT NULL,
-  `turnsPlayed` int(11) NOT NULL,
-  `PM` int(11) NOT NULL,
-  `PT` int(11) NOT NULL,
+  `alive` int(11) NOT NULL,
+  `roundsPlayed` int(11) NOT NULL,
   `equipWeapon` int(11) NOT NULL,
   `actionsWeapon` int(11) NOT NULL,
   `actionsChip` int(11) NOT NULL,
+  `PM` int(11) NOT NULL,
+  `PT` int(11) NOT NULL,
   `dmg_in` int(11) NOT NULL,
   `dmg_out` int(11) NOT NULL,
   `heal_in` int(11) NOT NULL,
@@ -56,12 +85,10 @@ function objectToArray($d) {
 include 'connect.php';
 
 $d = objectToArray(json_decode($_POST['json'])) ;
-
 foreach($d as $key)
 {
-	$insData = $key['data'] ;
-	$columns = implode(", ",array_keys($insData));
-	$values  = implode("', '", array_values($insData));
+	$columns = implode(", ",array_keys($key));
+	$values  = implode("', '", array_values($key));
 	$sql = "INSERT INTO `leekwars_data`($columns) VALUES ('$values')";
 	
 	try
