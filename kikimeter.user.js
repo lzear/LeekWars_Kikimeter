@@ -1,11 +1,13 @@
 // ==UserScript==
 // @name       		LeekWars : LeeKikiMeter
-// @version			0.0.1
+// @version			0.02
 // @description  	Ce script affiche un résumé des combats de leekwars
 // @match      		http://leekwars.com/report/*
 // @author			Elzéar, yLark
 // @grant			none
 // @projectPage		https://github.com/Zear06/LeekWars_Kikimeter
+// @downloadURL		https://github.com/Zear06/LeekWars_Kikimeter/raw/master/kikimeter.user.js
+// @updateURL		https://github.com/Zear06/LeekWars_Kikimeter/raw/master/kikimeter.user.js
 // ==/UserScript==
 
 // URL DE LA PAGE PHP QUI RÉCEPTIONNE LES DONNÉES
