@@ -376,7 +376,7 @@ function displayKikimeter() {
 		td = document.createElement('td');
 		td.className = 'name';
 
-		if (currentFight.leeks[j]['roundsPlayed']) {
+		if (currentFight.leeks[j]['alive']) {
 			var span = document.createElement('span');
 			span.className = 'alive';
 		} else {
