@@ -3,35 +3,6 @@
 --
 -- Structure de la table `leekwars_data`
 --
-var serverFightData = [
-		'fightId',
-		'draw',
-		'bonus',
-		'nbRounds'
-		'leekId',
-		'name',
-		'team',
-		'alive',
-		'level',
-		'XP',
-		'gainXP',
-		'gainTalent',
-		'gainHabs',
-		'roundsPlayed',
-		'PT',
-		'PM',
-		'equipWeapon',
-		'actionsWeapon',
-		'actionsChip',
-		'dmg_in',
-		'dmg_out',
-		'heal_in',
-		'heal_out',
-		'fails',
-		'lastHits',
-		'blabla',
-		'crashes'
-	];
 CREATE TABLE IF NOT EXISTS `leekwars_data` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `fightId` int(11) NOT NULL,
@@ -65,6 +36,20 @@ CREATE TABLE IF NOT EXISTS `leekwars_data` (
   UNIQUE KEY `ukey` (`fightId`, `leekId`, `team`),
   KEY `id` (`id`)
 ) ENGINE=MyISAM DEFAULT CHARSET=latin1 AUTO_INCREMENT=1 ;
+
+
+--
+-- Contenu de `connect.php` (remplacer les données entre crochets [] ) :
+--
+<?php
+try
+{	$bdd = new PDO('mysql:host=[HOST];dbname=[DBNAME]', '[USER]', '[PASSWORD]', array(PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION));
+}
+catch (Exception $e)
+{	die('Erreur : ' . $e->getMessage());
+}
+?>
+
 */
 
 header("Content-Type: text/plain");
