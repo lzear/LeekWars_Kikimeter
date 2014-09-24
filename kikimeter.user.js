@@ -124,9 +124,29 @@ function Fight() {
 		}
 		return dataNameSum;
 	}
+	
+	// Retourne un tableau de toutes les actions réalisées au cours du combat : {'action' : nom_de_laction, 'PTcount' : nombre_de_PT_utilisés_par_tous_les_poireaux}
+	this.actionsDone = function() {
+		var actionsDone = [];
+		for (var i in this.leeks) {											// Boucle sur les poireaux
+			for(var j in this.leeks[i].PTusage) {							// Boucle sur les actions réalisées par ce poireau
+				if(actionsDone[j] == undefined || actionsDone[j] == null)	// Test si l'action n'a pas déjà été stockée dans le tableau
+					actionsDone[j] = {'action' : j, 'PTcount' : 0};			// Créé l'action dans le tableau récap
+				actionsDone[j].PTcount += this.leeks[i].PTusage[j];			// Incrémente l'action du nombre de PT
+			}
+		}
+		
+		// Supprime les clef du tableau (sinon, le tri ne fonctionne pas)
+		var tempArray = [];
+		for(var i in actionsDone) tempArray.push(actionsDone[i]);
+		
+		// Tri le tableau
+		tempArray.sort(function(a,b){return b.PTcount - a.PTcount});
+		
+		return tempArray;
+	}
 
 	this.sumRounds = function() {
-
 		for (var leek in this.leeks) {
 			this.leeks[leek].sumRounds();
 			this.leeks[leek].makePTperTurn();
@@ -153,7 +173,13 @@ function Leek(leekFightId, name, team, tr) {
 	this.gainTalent = parseInt(tr.getElementsByClassName('talent')[0].textContent.replace(/[^\-?\d.]/g, ''));
 	this.gainHabs = parseInt(tr.getElementsByClassName('money')[0].children[0].firstChild.textContent.replace(/[^\d.]/g, ''));
 	this.round = {};
+	this.PTusage = {};
 
+	this.addToPTusageData = function(dataName, value) {
+		if(isNaN(this.PTusage[dataName]))
+			this.PTusage[dataName] = 0;
+		this.PTusage[dataName] += value;
+	};
 	this.writeData = function(dataName, value) { // Initialise une valeur
 		this[dataName] = value;
 	};
@@ -263,7 +289,11 @@ function colorize_report_general() {
 // Lit la liste des actions
 function readActions() {
 	var actions = document.getElementById('actions').children;
-
+	
+	var lastPTcount = null;		// Stock le dernier décompte de PT, pour le suivi de l'usage des PT par arme/puce/etc.
+	var lastPTaction = null;	// Stock la dernière action, pour le suivi de l'usage des PT par arme/puce/etc.
+	var currentWeapon = [];		// Stock l'arme actuellement équipée pour chaque poireau
+	
 	for (var i in actions) {
 		// NUMERO DE TOUR
 		if (/^Tour ([0-9]+)$/.test(actions[i].textContent)) {
@@ -276,23 +306,27 @@ function readActions() {
 			var attacker = RegExp.$1;
 			var attackerWeapon = RegExp.$1;
 			currentFight.leeks[attacker].addToRoundData(round, 'actionsWeapon', 1);
+			lastPTaction = currentWeapon[RegExp.$1];
 
 		}
-		if (/^([^\s]+) lance [^\s]+$/.test(actions[i].textContent)) {
+		if (/^([^\s]+) lance (.+)$/.test(actions[i].textContent)) {
 			var attacker = RegExp.$1;
 			var attackerChip = RegExp.$1;
 			currentFight.leeks[attacker].addToRoundData(round, 'actionsChip', 1);
+			lastPTaction = RegExp.$2;
 		}
 
 		// TOUR DE [LEEKNAME]
 		if (/^Tour de ([^\s]+)$/.test(actions[i].textContent)) {
 			currentFight.leeks[RegExp.$1].writeRoundData(round, 'roundsPlayed', 1);
-			currentFight.leeks[RegExp.$1].writeData('color', actions[i].children[0].style.color); // Récupère et stock la couleur du poireau
+			currentFight.leeks[RegExp.$1].writeData('color', actions[i].children[0].style.color); // Récupère et stock la couleur du texte du poireau
+			var currentLeek = RegExp.$1;
 		}
 
 		// PT
 		if (/^([^\s]+) perd ([0-9]+) PT$/.test(actions[i].textContent)) {
 			currentFight.leeks[RegExp.$1].addToRoundData(round, 'PT', parseInt(RegExp.$2));
+			lastPTcount = parseInt(RegExp.$2);
 		}
 
 		// PM
@@ -313,18 +347,23 @@ function readActions() {
 		}
 
 		// ARME ÉQUIPÉE
-		if (/^([^\s]+) prend l'arme [^\s]+$/.test(actions[i].textContent)) {
+		//if (/^([^\s]+) prend l'arme ([^\s]+)$/.test(actions[i].textContent)) {
+		if (/^([^\s]+) prend l'arme (.+)$/.test(actions[i].textContent)) {
 			currentFight.leeks[RegExp.$1].addToRoundData(round, 'equipWeapon', 1);
+			currentWeapon[RegExp.$1] = RegExp.$2;	// Stock l'arme en cours du poireau
+			lastPTaction = 'Arme équipée';
 		}
 
 		// ECHEC
 		if (/^([^\s]+) tire... Échec !$/.test(actions[i].textContent)) {
 			currentFight.leeks[RegExp.$1].addToRoundData(round, 'fails', 1);
 			currentFight.leeks[RegExp.$1].addToRoundData(round, 'actionsWeapon', 1);
+			lastPTaction = 'Échec';
 		}
 		if (/^([^\s]+) lance [^\s]+... Échec !$/.test(actions[i].textContent)) {
 			currentFight.leeks[RegExp.$1].addToRoundData(round, 'fails', 1);
 			currentFight.leeks[RegExp.$1].addToRoundData(round, 'actionsChip', 1);
+			lastPTaction = 'Échec';
 		}
 
 		// MORT
@@ -335,11 +374,19 @@ function readActions() {
 		// BLABLA
 		if (/^([^\s]+) dit : /.test(actions[i].textContent)) {
 			currentFight.leeks[RegExp.$1].addToRoundData(round, 'blabla', 1);
+			lastPTaction = 'Blabla';
 		}
 
 		// PLANTAGE
 		if (/^([^\s]+) a planté !$/.test(actions[i].textContent)) {
 			currentFight.leeks[RegExp.$1].addToRoundData(round, 'crashes', 1);
+		}
+		
+		// Incrémente les données de la dernière action. Comme parfois les PT sont décomptés avant que les actions ne soient annoncées, ou vice-versa, on attend que les deux infos soient rassemblées pour comptabiliser
+		if(lastPTaction != null && lastPTcount != null) {
+			currentFight.leeks[currentLeek].addToPTusageData(lastPTaction, lastPTcount);
+			lastPTaction = null;
+			lastPTcount = null;
 		}
 	}
 }
@@ -443,6 +490,101 @@ function displayKikimeter() {
 	// Création du titre au-dessus du tableau
 	var h1 = document.createElement('h1');
 	h1.appendChild(document.createTextNode('Résumé'));
+	document.body.appendChild(h1);
+	resume.appendChild(h1);
+	resume.appendChild(table);
+
+	// Insertion du tableau dans le DOM
+	var page = document.getElementById('page');
+	var report_actions = document.getElementById('report-actions');
+	page.insertBefore(resume, report_actions);
+}
+
+// Affiche le tableau d'usage des PT
+function displayPTusageTable() {
+
+	var actionsDone = currentFight.actionsDone();
+	
+	var table = document.createElement('table');
+	table.className = 'report';
+
+	// thead
+	var thead = document.createElement('thead');
+
+	var tr = document.createElement('tr');
+
+	var th = document.createElement('th');
+	th.appendChild(document.createTextNode('Action'));
+	tr.appendChild(th);
+	
+	// Créé les entêtes de colonnes avec les noms des poireaux
+	for (var j in currentFight.leeks) {
+		var th = document.createElement('th');
+		
+		if (currentFight.leeks[j]['alive']) {
+			var span = document.createElement('span');
+			//span.className = 'alive';
+		} else {
+			var span = document.createElement('span');
+			//span.className = 'dead';
+			th.appendChild(span);
+			span = document.createElement('span');
+		}
+
+		span.style.color = currentFight.leeks[j]['color'];
+		span.appendChild(document.createTextNode(currentFight.leeks[j]['name']));
+		th.appendChild(span);
+		tr.appendChild(th);
+	}
+	
+	// Total, en dernière colonne de l'entête
+	var th = document.createElement('th');
+	th.appendChild(document.createTextNode('Total'));
+	th.className = 'total';
+	tr.appendChild(th);
+	
+	thead.appendChild(tr);
+	table.appendChild(thead);
+
+	// tbody
+	var tbody = document.createElement('tbody');
+
+	for (var i in actionsDone) {
+		tr = document.createElement('tr');
+		td = document.createElement('td');
+		td.appendChild(document.createTextNode(actionsDone[i]['action']));
+		td.className = 'name';
+		tr.appendChild(td);
+		
+		for (var j in currentFight.leeks) {
+			var actionPT = currentFight.leeks[j].PTusage[actionsDone[i]['action']];
+			if(isNaN(actionPT)) actionPT = 0;
+			var disp = Math.round(actionPT / currentFight.leeks[j]['PT'] * 100) / 1;
+			td = document.createElement('td');
+			if(!isNaN(disp) && actionPT != 0) td.appendChild(document.createTextNode(disp + '%'));
+			td.title = actionPT + ' PT';
+			td.setAttribute('sorttable_customkey', actionPT);		// Permet un tri correct par le plugin JavaScript sorttable : http://www.kryogenix.org/code/browser/sorttable/#customkeys
+			tr.appendChild(td);
+		}
+		
+		// Total, en dernière colonne de la ligne
+		td = document.createElement('td');
+		td.appendChild(document.createTextNode(Math.round(actionsDone[i]['PTcount'] / currentFight.fightSum('PT')*100 ) + '%'));
+		td.title = actionsDone[i]['PTcount'] + ' PT';
+		td.setAttribute('sorttable_customkey', actionsDone[i]['PTcount']);		// Permet un tri correct par le plugin JavaScript sorttable : http://www.kryogenix.org/code/browser/sorttable/#customkeys
+		td.className = 'total';
+		tr.appendChild(td);
+		
+		tbody.appendChild(tr);
+	}
+	table.appendChild(tbody);
+
+	var resume = document.createElement('div');
+	resume.id = 'report-PTusageTable';
+
+	// Création du titre au-dessus du tableau
+	var h1 = document.createElement('h1');
+	h1.appendChild(document.createTextNode('Utilisation des PT'));
 	document.body.appendChild(h1);
 	resume.appendChild(h1);
 	resume.appendChild(table);
@@ -772,6 +914,9 @@ currentFight.sumRounds();
 
 //		CREATION DU RESUME
 displayKikimeter();
+
+//		CREATION DU RÉCAP D'USAGE DES PT
+displayPTusageTable();
 
 //		LISTE DES HAUTS FAITS
 var Highlights = {};
