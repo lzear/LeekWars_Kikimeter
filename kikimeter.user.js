@@ -290,6 +290,7 @@ function colorize_report_general() {
 function readActions() {
 	var actions = document.getElementById('actions').children;
 	
+	var attacker;
 	var lastPTcount = null;		// Stock le dernier décompte de PT, pour le suivi de l'usage des PT par arme/puce/etc.
 	var lastPTaction = null;	// Stock la dernière action, pour le suivi de l'usage des PT par arme/puce/etc.
 	var currentWeapon = [];		// Stock l'arme actuellement équipée pour chaque poireau
@@ -303,14 +304,14 @@ function readActions() {
 
 		// VARIABLES UTILES POUR LES ACTIONS DE PLUSIEURS LIGNES
 		if (/^([^\s]+) tire$/.test(actions[i].textContent)) {
-			var attacker = RegExp.$1;
+			attacker = RegExp.$1;
 			var attackerWeapon = RegExp.$1;
 			currentFight.leeks[attacker].addToRoundData(round, 'actionsWeapon', 1);
 			lastPTaction = currentWeapon[RegExp.$1];
 
 		}
 		if (/^([^\s]+) lance (.+)$/.test(actions[i].textContent)) {
-			var attacker = RegExp.$1;
+			attacker = RegExp.$1;
 			var attackerChip = RegExp.$1;
 			currentFight.leeks[attacker].addToRoundData(round, 'actionsChip', 1);
 			lastPTaction = RegExp.$2;
@@ -321,6 +322,7 @@ function readActions() {
 			currentFight.leeks[RegExp.$1].writeRoundData(round, 'roundsPlayed', 1);
 			currentFight.leeks[RegExp.$1].writeData('color', actions[i].children[0].style.color); // Récupère et stock la couleur du texte du poireau
 			var currentLeek = RegExp.$1;
+			attacker = null;	// Réinitialise l'attacker. Permet de ne pas lui attribuer des heal ou damage overtime lancés par un autre
 		}
 
 		// PT
@@ -337,13 +339,13 @@ function readActions() {
 		// DEGATS
 		if (/^([^\s]+) perd ([0-9]+) PV$/.test(actions[i].textContent)) {
 			currentFight.leeks[RegExp.$1].addToRoundData(round, 'dmg_in', parseInt(RegExp.$2.replace(/[^\d.]/g, '')));
-			currentFight.leeks[attacker].addToRoundData(round, 'dmg_out', parseInt(RegExp.$2.replace(/[^\d.]/g, '')));
+			if(attacker != null) currentFight.leeks[attacker].addToRoundData(round, 'dmg_out', parseInt(RegExp.$2.replace(/[^\d.]/g, '')));
 		}
 
 		// SOINS
 		if (/^([^\s]+) gagne ([0-9]+) PV$/.test(actions[i].textContent)) {
 			currentFight.leeks[RegExp.$1].addToRoundData(round, 'heal_in', parseInt(RegExp.$2.replace(/[^\d.]/g, '')));
-			currentFight.leeks[attacker].addToRoundData(round, 'heal_out', parseInt(RegExp.$2.replace(/[^\d.]/g, '')));
+			if(attacker != null) currentFight.leeks[attacker].addToRoundData(round, 'heal_out', parseInt(RegExp.$2.replace(/[^\d.]/g, '')));
 		}
 
 		// ARME ÉQUIPÉE
