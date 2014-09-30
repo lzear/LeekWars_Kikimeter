@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name       		LeekWars : LeeKikiMeter
-// @version			0.02
+// @version			0.03
 // @description  	Ce script affiche un résumé des combats de leekwars
 // @match      		http://leekwars.com/report/*
 // @author			Elzéar, yLark, Foudge
@@ -8,6 +8,7 @@
 // @projectPage		https://github.com/Zear06/LeekWars_Kikimeter
 // @downloadURL		https://github.com/Zear06/LeekWars_Kikimeter/raw/master/kikimeter.user.js
 // @updateURL		https://github.com/Zear06/LeekWars_Kikimeter/raw/master/kikimeter.user.js
+// @require			https://raw.githubusercontent.com/nnnick/Chart.js/master/Chart.js
 // ==/UserScript==
 
 // URL DE LA PAGE PHP QUI RÉCEPTIONNE LES DONNÉES
@@ -244,6 +245,9 @@ function Leek(leekFightId, name, team, tr) {
 	};
 	this.addToRoundData = function(round, dataName, value) {
 		this.round[round][dataName] += value;
+	};
+	this.getRoundData = function(round, dataName) {
+		return this.round[round][dataName];
 	};
 	this.sumRoundsDataRouns = function(dataName, firstRound, lastRound) {
 		this[dataName] = 0;
@@ -846,6 +850,80 @@ function colorize_report_general() {
 	}
 }
 
+// Utilisation de Chart.js pour dessiner le graphique : http://www.chartjs.org/docs/#line-chart
+function createLineChart() {
+
+	var roundLabels = [];
+	for (var i = 0; i < currentFight.nbRounds; i++) {
+		roundLabels[i] = "Tour " + (i+1);
+	}
+
+	var myDatasets = [];
+	for (var leek in currentFight.leeks) {
+		var totalLife = currentFight.leeks[leek].life;
+		var leekPV = [];
+		for (var i=0; i<currentFight.nbRounds; i++) {
+			var dmg_in = currentFight.leeks[leek].getRoundData(i+1, 'dmg_in');
+			var heal_in = currentFight.leeks[leek].getRoundData(i+1, 'heal_in');
+			var diffPV = ((heal_in != null) ? heal_in : 0) - ((dmg_in != null) ? dmg_in : 0);
+			if (i == 0)
+				leekPV[i] = totalLife + diffPV;
+			else
+				leekPV[i] = leekPV[i-1] + diffPV;
+		}
+		var color = currentFight.leeks[leek].color;
+		var dataset = {
+				label: currentFight.leeks[leek].name,
+				fillColor : color.replace(')', ', 0.1)').replace('rgb', 'rgba'),
+				strokeColor : color,
+				pointColor : color,
+				pointStrokeColor : "#fff",
+				pointHighlightFill : "#fff",
+				pointHighlightStroke : color,
+				data : leekPV
+		};
+		myDatasets.push(dataset);
+	}
+
+	var canvas = document.getElementById("canvas_chart");
+	var ctx = canvas.getContext("2d");
+	var chart = new Chart(ctx);
+	var lineChartData = { labels: roundLabels, datasets: myDatasets };
+	window.myLine = chart.Line(lineChartData, {
+		responsive: false,
+		animation: false,
+		bezierCurve: false,
+		pointDotRadius: 3,
+		pointHitDetectionRadius: Math.floor(24-(currentFight.nbRounds*0.3)), //plus il y a de tours, plus la zone de détection est petite
+		datasetStrokeWidth : 1
+	});
+}
+
+// Affiche le graphe d'évolution des points de chaque poireau
+function displayLineChartLeeksPV() {
+	// Uniquement si combat Solo
+	if (currentFight.nbLeeks != 2) return;
+
+	var chart = document.createElement('div');
+	chart.id = 'report-chart';
+	// Création du titre
+	var h1 = document.createElement('h1');
+	h1.appendChild(document.createTextNode('Evolution des PV'));
+	// Création du graphique
+	var line_chart = document.createElement('canvas');
+	line_chart.id = 'canvas_chart';
+	line_chart.width = "900";
+	line_chart.height = "400";
+	line_chart.style.marginLeft = '35px';
+	// Insertion dans le DOM
+	var page = document.getElementById('page');
+	var report_actions = document.getElementById('report-actions');
+	chart.appendChild(h1);
+	chart.appendChild(line_chart);
+	page.insertBefore(chart, report_actions);
+	createLineChart();
+}
+
 //	Permet de trier les tableaux html en appelant le script présenté ici : http://www.kryogenix.org/code/browser/sorttable
 function make_tables_sortable() {
 	var s = document.createElement('script');
@@ -978,6 +1056,9 @@ function main(data) {
 
 	// CREATION DU RESUME
 	displayKikimeter();
+	
+	// CREATION DU GRAPHE DES PV
+	displayLineChartLeeksPV();
 
 	// CREATION DU RÉCAP D'USAGE DES PT
 	displayPTusageTable();
