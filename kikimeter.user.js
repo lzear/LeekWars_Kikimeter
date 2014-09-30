@@ -3,7 +3,7 @@
 // @version			0.02
 // @description  	Ce script affiche un résumé des combats de leekwars
 // @match      		http://leekwars.com/report/*
-// @author			Elzéar, yLark
+// @author			Elzéar, yLark, Foudge
 // @grant			none
 // @projectPage		https://github.com/Zear06/LeekWars_Kikimeter
 // @downloadURL		https://github.com/Zear06/LeekWars_Kikimeter/raw/master/kikimeter.user.js
@@ -198,20 +198,29 @@ function Leek(leekFightId, name, team, tr) {
 	this.round = {};
 	this.PTusage = {};
 	
-	this.agility = rawFightData.leeks[this.leekFightId].agility;
-	this.appearence = rawFightData.leeks[this.leekFightId].appearence;
-	this.cellPos = rawFightData.leeks[this.leekFightId].cellPos;		// Position du poireau en début de combat
-	this.farmer = rawFightData.leeks[this.leekFightId].farmer;			// Éleveur du poireau
-	this.force = rawFightData.leeks[this.leekFightId].force;
-	this.frequency = rawFightData.leeks[this.leekFightId].frequency;
-	this.id = rawFightData.leeks[this.leekFightId].id;					//    /!\ Actuellement en doublon avec this.leekFightId
-	this.level = rawFightData.leeks[this.leekFightId].level;
-	this.life = rawFightData.leeks[this.leekFightId].life;
-	//this.name = rawFightData.leeks[this.leekFightId].name;
-	this.pm = rawFightData.leeks[this.leekFightId].pm;
-	this.pt = rawFightData.leeks[this.leekFightId].pt;
-	this.skin = rawFightData.leeks[this.leekFightId].skin;
-	//this.team = rawFightData.leeks[this.leekFightId].team;
+	// Détermine l'id du poireau en se basant sur le nom (le leekId n'est pas renseigné)
+	// /!\ Ne pas confondre cet id avec leekFightId !
+	for (var leek in rawFightData.leeks) {
+		if (rawFightData.leeks[leek].name == this.name) {
+			this.id = rawFightData.leeks[leek].id;
+			break;
+		}
+	}
+	
+	this.agility = rawFightData.leeks[this.id].agility;
+	this.appearence = rawFightData.leeks[this.id].appearence;
+	this.cellPos = rawFightData.leeks[this.id].cellPos;			// Position du poireau en début de combat
+	this.farmer = rawFightData.leeks[this.id].farmer;			// Éleveur du poireau
+	this.force = rawFightData.leeks[this.id].force;
+	this.frequency = rawFightData.leeks[this.id].frequency;
+	//this.id = rawFightData.leeks[this.id].id;
+	this.level = rawFightData.leeks[this.id].level;
+	this.life = rawFightData.leeks[this.id].life;
+	//this.name = rawFightData.leeks[this.id].name;
+	this.pm = rawFightData.leeks[this.id].pm;
+	this.pt = rawFightData.leeks[this.id].pt;
+	this.skin = rawFightData.leeks[this.id].skin;
+	//this.team = rawFightData.leeks[this.id].team;
 
 	this.addToPTusageData = function(dataName, value) {
 		if(isNaN(this.PTusage[dataName]))
