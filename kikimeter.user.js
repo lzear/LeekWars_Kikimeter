@@ -857,6 +857,7 @@ function createLineChart() {
 				leekPV[i] = totalLife + diffPV;
 			else
 				leekPV[i] = leekPV[i-1] + diffPV;
+			if(leekPV[i] == 0) break;	// Le poireau est mort, on ne continue pas à tracer sa vie
 		}
 		var color = currentFight.leeks[leek].color;
 		var dataset = {
