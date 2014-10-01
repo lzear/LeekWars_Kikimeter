@@ -14,41 +14,51 @@
 // URL DE LA PAGE PHP QUI RÉCEPTIONNE LES DONNÉES
 var dataReceiverURL = ''; // http://<TRUC>/get.php
 
-// ÉDITER dispData POUR CHOISIR LES COLONNES À AFFICHER
-var dispData = [
-	'level',
-//	'XP',
-	'dmg_in',
-	'dmg_out',
-	'heal_in',
-	'heal_out',
-	'lastHits',
-	'roundsPlayed',
-	'usedPT',
-	'PTperTurn',
-	'usedPM',
-//	'life',
-//	'equipWeapon',
-	'actionsWeapon',
-	'actionsChip',
-//	'gainXP',
-//	'gainTalent',
-//	'gainHabs',
-	'fails',
-//	'blabla',
-	'crashes',
-//	'agility',
-//	'appearence',
-//	'cellPos',
-//	'farmer',
-//	'force',
-//	'frequency',
-//	'id',
-//	'life',
-//	'pm',
-//	'pt',
-//	'skin'
-];
+// Données affichées par défaut (1 = affiché, 0 = masqué)
+var dispData = {
+  'level' : 1,
+  'XP' : 0,
+  'dmg_in' : 1,
+  'dmg_out' : 1,
+  'heal_in' : 1,
+  'heal_out' : 1,
+  'lastHits' : 1,
+  'usedPT' : 1,
+  'PTperTurn' : 1,
+	'usedPM' : 1,
+	'roundsPlayed' : 1,
+	'equipWeapon' : 0,
+	'actionsWeapon' : 1,
+	'actionsChip' : 1,
+	'gainXP' : 0,
+	'gainTalent' : 0,
+	'gainHabs' : 0,
+	'fails' : 1,
+	'blabla' : 0,
+	'crashes' : 1,
+	'agility' : 0,
+	'appearence' : 0,
+	'cellPos' : 0,
+	'farmer' : 0,
+	'force' : 0,
+	'frequency' : 0,
+	'id' : 0,
+  'life' : 0,
+	'pm' : 0,
+	'pt' : 0,
+	'skin' : 0
+};
+
+// Récupération de la configuration dans les cookies. Si un cookie n'est pas présent, on le crée avec la valeur par défaut du tableau
+for (var key in dispData) {
+	var value = getCookie("kikimeter-" + key);
+	if (value != "") {
+		dispData[key] = value;
+	}
+	else {
+		setCookie("kikimeter-" + key, dispData[key], 365);
+	}
+}
 
 // Intitulés des variables
 var leekData = { // variables relatives aux Leeks
@@ -579,9 +589,11 @@ function displayKikimeter() {
 	tr.appendChild(th);
 
 	for (var i in dispData) {
-		var th = document.createElement('th');
-		th.appendChild(document.createTextNode(allData[dispData[i]]));
-		tr.appendChild(th);
+        if (dispData[i] == 1) {
+            var th = document.createElement('th');
+            th.appendChild(document.createTextNode(allData[i]));
+            tr.appendChild(th);
+        }
 	}
 
 	thead.appendChild(tr);
@@ -616,11 +628,13 @@ function displayKikimeter() {
 		tr.appendChild(td);
 
 		for (var i in dispData) {
-			var disp = (isNaN(currentFight.leeks[j][dispData[i]])) ? currentFight.leeks[j][dispData[i]] : Math.round(currentFight.leeks[j][dispData[i]] * 10) / 10;
-			td = document.createElement('td');
-			//td.appendChild(document.createTextNode(Math.round(currentFight.leeks[j][dispData[i]]*10)/10));
-			td.appendChild(document.createTextNode((disp)));
-			tr.appendChild(td);
+            if (dispData[i] == 1) {
+                var disp = (isNaN(currentFight.leeks[j][i])) ? currentFight.leeks[j][i] : Math.round(currentFight.leeks[j][i] * 10) / 10;
+                td = document.createElement('td');
+                //td.appendChild(document.createTextNode(Math.round(currentFight.leeks[j][dispData[i]]*10)/10));
+                td.appendChild(document.createTextNode((disp)));
+                tr.appendChild(td);
+            }
 		}
 
 		tbody.appendChild(tr);
@@ -646,11 +660,11 @@ function displayKikimeter() {
 	tr.appendChild(td);
 
 	for (var i in dispData) {
-
-		td = document.createElement('td');
-		td.appendChild(document.createTextNode(Math.round(currentFight.fightSum(dispData[i]) * 10) / 10));
-		tr.appendChild(td);
-
+        if (dispData[i] == 1) {
+            td = document.createElement('td');
+            td.appendChild(document.createTextNode(Math.round(currentFight.fightSum(i) * 10) / 10));
+            tr.appendChild(td);
+        }
 	}
 
 	tfoot.appendChild(tr);
@@ -924,6 +938,25 @@ function displayLineChartLeeksPV() {
 	createLineChart();
 }
 
+// Affiche les options de configuration
+function displayConfig() {
+  $('<center><div class="button" id="kikimeter-config-toggle">Afficher/Masquer la configuration</div></center><div id="kikimeter-config"><h1>Configuration</h1><h2>Colonnes du tableau</h2></div>').insertBefore("#report-actions");
+  var kikimeterConfig = $('#kikimeter-config');
+  for (var key in dispData) {
+      kikimeterConfig.append('<input type="checkbox" name="' + key + '"' + (dispData[key]==1 ? 'checked' : '') + '/><label for="' + key + '">' + key + '</label><br/>');   
+  }
+  $('#kikimeter-config input[type=checkbox]').change(function(){
+  	var key = $(this).attr('name');
+  	var value = $(this).is(':checked') ? 1 : 0;
+  	dispData[key] = value;
+  	setCookie("kikimeter-" + key, value, 365);
+  });
+  $('#kikimeter-config-toggle').click(function() {
+  	kikimeterConfig.toggle();
+  });
+	kikimeterConfig.toggle();
+}
+
 //	Permet de trier les tableaux html en appelant le script présenté ici : http://www.kryogenix.org/code/browser/sorttable
 function make_tables_sortable() {
 	var s = document.createElement('script');
@@ -1025,7 +1058,23 @@ function getXMLHttpRequest() {
 	return xhr;
 }
 
+function setCookie(cname, cvalue, exdays) {
+  var d = new Date();
+  d.setTime(d.getTime() + (exdays*24*60*60*1000));
+  var expires = "expires="+d.toUTCString();
+  document.cookie = cname + "=" + cvalue + "; " + expires;
+}
 
+function getCookie(cname) {
+  var name = cname + "=";
+  var ca = document.cookie.split(';');
+  for(var i=0; i<ca.length; i++) {
+      var c = ca[i];
+      while (c.charAt(0)==' ') c = c.substring(1);
+      if (c.indexOf(name) != -1) return c.substring(name.length,c.length);
+  }
+  return "";
+}
 
 var rawFightData;		// Objet stockant les données du combat récupérées depuis la page http://leekwars.com/fight_get
 var currentFight;		// Stock les données du combat
@@ -1065,6 +1114,9 @@ function main(data) {
 
 	// AFFICHAGE DES HAUTS FAITS (HIGHLIGHTS)
 	displayHighlights();
+    
+  // AFFICHE LES OPTIONS DE CONFIGURATION
+  displayConfig();
 
 	// MISE EN COULEUR DU NOM DES POIREAUX DANS LE RAPPORT GÉNÉRAL
 	colorize_report_general();
