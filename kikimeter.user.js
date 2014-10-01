@@ -196,25 +196,25 @@ function Leek(name, team, tr) {
 	// Récupère l'id du poireau en se basant sur son nom (ne fonctionne pas en cas de combat contre soi-même)
 	for (var leek in rawFightData.leeks) {
 		if (rawFightData.leeks[leek].name == this.name) {
-			this.id = rawFightData.leeks[leek].id;
+			this.rawFightDataId = leek;
 			break;
 		}
 	}
 	
-	this.agility = rawFightData.leeks[this.id].agility;
-	this.appearence = rawFightData.leeks[this.id].appearence;
-	this.cellPos = rawFightData.leeks[this.id].cellPos;			// Position du poireau en début de combat
-	this.farmer = rawFightData.leeks[this.id].farmer;			// Éleveur du poireau
-	this.force = rawFightData.leeks[this.id].force;
-	this.frequency = rawFightData.leeks[this.id].frequency;
-	//this.id = rawFightData.leeks[this.id].id;
-	this.level = rawFightData.leeks[this.id].level;
-	this.life = rawFightData.leeks[this.id].life;
-	//this.name = rawFightData.leeks[this.id].name;
-	this.pm = rawFightData.leeks[this.id].pm;
-	this.pt = rawFightData.leeks[this.id].pt;
-	this.skin = rawFightData.leeks[this.id].skin;
-	//this.team = rawFightData.leeks[this.id].team;
+	this.agility = rawFightData.leeks[this.rawFightDataId].agility;
+	this.appearence = rawFightData.leeks[this.rawFightDataId].appearence;
+	this.cellPos = rawFightData.leeks[this.rawFightDataId].cellPos;			// Position du poireau en début de combat
+	this.farmer = rawFightData.leeks[this.rawFightDataId].farmer;			// Éleveur du poireau
+	this.force = rawFightData.leeks[this.rawFightDataId].force;
+	this.frequency = rawFightData.leeks[this.rawFightDataId].frequency;
+	this.id = rawFightData.leeks[this.rawFightDataId].id;					// Numéro unique du poireau dans le cadre du combat
+	this.level = rawFightData.leeks[this.rawFightDataId].level;
+	this.life = rawFightData.leeks[this.rawFightDataId].life;
+	//this.name = rawFightData.leeks[this.rawFightDataId].name;
+	this.pm = rawFightData.leeks[this.rawFightDataId].pm;
+	this.pt = rawFightData.leeks[this.rawFightDataId].pt;
+	this.skin = rawFightData.leeks[this.rawFightDataId].skin;
+	//this.team = rawFightData.leeks[this.rawFightDataId].team;
 
 	this.addToPTusageData = function(dataName, value) {
 		if(isNaN(this.PTusage[dataName]))
@@ -857,7 +857,6 @@ function createLineChart() {
 				leekPV[i] = totalLife + diffPV;
 			else
 				leekPV[i] = leekPV[i-1] + diffPV;
-			
 		}
 		var color = currentFight.leeks[leek].color;
 		var dataset = {
@@ -873,7 +872,7 @@ function createLineChart() {
 		myDatasets.push(dataset);
 	}
 	
-	/*// Balance des PV en %
+	/*// Balance des PV en %, ne fonctionne qu'en solo
 	var balancePV = [];
 	for (var i=0; i<currentFight.nbRounds; i++) {
 		balancePV[i] = myDatasets[0].data[i] / max(myDatasets[0].data) *100 - myDatasets[1].data[i]  / max(myDatasets[1].data) *100;
@@ -906,8 +905,6 @@ function createLineChart() {
 
 // Affiche le graphe d'évolution des points de chaque poireau
 function displayLineChartLeeksPV() {
-	// Uniquement si combat Solo
-	if (currentFight.nbLeeks != 2) return;
 
 	var chart = document.createElement('div');
 	chart.id = 'report-chart';
