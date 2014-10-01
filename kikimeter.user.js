@@ -749,13 +749,10 @@ function displayPTusageTable() {
 	// Créé les entêtes de colonnes avec les noms des poireaux
 	for (var j in currentFight.leeks) {
 		var th = document.createElement('th');
-
-		if (currentFight.leeks[j]['alive']) {
-			var span = document.createElement('span');
-			//span.className = 'alive';
-		} else {
-			var span = document.createElement('span');
-			//span.className = 'dead';
+		
+		var span = document.createElement('span');
+		if (!currentFight.leeks[j]['alive']) {
+			if(currentFight.nbLeeks <= 4) span.className = 'dead';	// N'affiche les crânes de mort que s'il y a peu de poireaux. Idéalement, il faudrait plutôt utiliser le nombre de caractères cumulé de tous les poireaux en jeu
 			th.appendChild(span);
 			span = document.createElement('span');
 		}
