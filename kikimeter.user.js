@@ -16,15 +16,15 @@ var dataReceiverURL = ''; // http://<TRUC>/get.php
 
 // Données affichées par défaut (1 = affiché, 0 = masqué)
 var dispData = {
-  'level' : 1,
-  'XP' : 0,
-  'dmg_in' : 1,
-  'dmg_out' : 1,
-  'heal_in' : 1,
-  'heal_out' : 1,
-  'lastHits' : 1,
-  'usedPT' : 1,
-  'PTperTurn' : 1,
+	'level' : 1,
+	'XP' : 0,
+	'dmg_in' : 1,
+	'dmg_out' : 1,
+	'heal_in' : 1,
+	'heal_out' : 1,
+	'lastHits' : 1,
+	'usedPT' : 1,
+	'PTperTurn' : 1,
 	'usedPM' : 1,
 	'roundsPlayed' : 1,
 	'equipWeapon' : 0,
@@ -43,7 +43,7 @@ var dispData = {
 	'force' : 0,
 	'frequency' : 0,
 	'id' : 0,
-  'life' : 0,
+	'life' : 0,
 	'pm' : 0,
 	'pt' : 0,
 	'skin' : 0
@@ -932,7 +932,16 @@ function createLineChart() {
 			data : balancePV
 	};
 	myDatasets.push(dataset);*/
-
+	
+	// Calcul d'une échelle de l'axe Y correcte
+	var scaleYMax = 0;
+	for(var i in myDatasets){
+		if(max(myDatasets[i].data) > scaleYMax)
+			scaleYMax = max(myDatasets[i].data);
+	}
+	var multiplier = Math.pow(10, scaleYMax.toString().length - 2);
+	scaleYMax = Math.ceil(scaleYMax / multiplier) * multiplier;
+	
 	var canvas = document.getElementById("canvas_chart");
 	var ctx = canvas.getContext("2d");
 	var chart = new Chart(ctx);
@@ -941,9 +950,15 @@ function createLineChart() {
 		responsive: false,
 		animation: false,
 		bezierCurve: false,
+		scaleGridLineColor : "rgba(0,0,0,.04)",
 		pointDotRadius: 2.5,
 		pointHitDetectionRadius: Math.floor(24-(currentFight.nbRounds*0.3)), // plus il y a de tours, plus la zone de détection est petite
-		datasetStrokeWidth : 1.2
+		datasetStrokeWidth : 1.2,
+		scaleOverride: true,
+		scaleStepWidth: Math.ceil(scaleYMax / 100)*10,
+		scaleSteps: 10,
+		scaleStartValue: 0,
+		scaleStopValue: 2000
 	});
 }
 
