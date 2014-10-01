@@ -62,7 +62,6 @@ for (var key in dispData) {
 
 // Intitulés des variables
 var leekData = { // variables relatives aux Leeks
-	'leekFightId': 'Leek Fight ID',
 	'leekId': 'Leek ID',
 	'team': 'Équipe',
 	'color': 'Couleur', // Couleur du texte du poireau
@@ -116,9 +115,9 @@ function Fight() {
 	this.leeks = {};
 	this.teams = [new Team(), new Team()];
 
-	this.addLeek = function(leekFightId, team, tr) {
+	this.addLeek = function(team, tr) {
 		var name = tr.getElementsByClassName('name')[0].textContent;
-		this.leeks[name] = new Leek(leekFightId, name, team, tr);
+		this.leeks[name] = new Leek(name, team, tr);
 		this.nbLeeks++;
 	}
 	this.addTeam = function(team, tr) {
@@ -147,8 +146,13 @@ function Fight() {
 		}
 		return dataNameSum;
 	}
+	
+	// Retourne la moyenne d'une data pour tous les leeks
+	this.fightMean = function(dataName) {
+		return this.fightSum(dataName) / this.nbLeeks;
+	}
 
-	// Retourne la somme d'une datas d'une équipe
+	// Retourne la somme d'une data d'une équipe
 	this.teamSum = function(teamNumber, dataName) {
 		var dataNameSum = 0;
 		for (var j in this.leeks) {
@@ -189,14 +193,9 @@ function Fight() {
 }
 
 // OBJET LEEK
-function Leek(leekFightId, name, team, tr) {
-
-	for (var key in leekData) {
-		//this[key] = 0 ;
-	}
+function Leek(name, team, tr) {
 
 	var linkTab = tr.getElementsByTagName('a')[0].href.split('/');
-	this.leekFightId = leekFightId;
 	this.leekId = parseInt(linkTab[linkTab.length - 1]); // Numéro du poireau dans le jeu
 	this.name = name;
 	this.team = team;
@@ -209,29 +208,28 @@ function Leek(leekFightId, name, team, tr) {
 	this.round = {};
 	this.PTusage = {};
 	
-	// Détermine l'id du poireau en se basant sur le nom (le leekId n'est pas renseigné)
-	// /!\ Ne pas confondre cet id avec leekFightId !
+	// Récupère l'id du poireau en se basant sur son nom (ne fonctionne pas en cas de combat contre soi-même)
 	for (var leek in rawFightData.leeks) {
 		if (rawFightData.leeks[leek].name == this.name) {
-			this.id = rawFightData.leeks[leek].id;
+			this.rawFightDataId = leek;
 			break;
 		}
 	}
 	
-	this.agility = rawFightData.leeks[this.id].agility;
-	this.appearence = rawFightData.leeks[this.id].appearence;
-	this.cellPos = rawFightData.leeks[this.id].cellPos;			// Position du poireau en début de combat
-	this.farmer = rawFightData.leeks[this.id].farmer;			// Éleveur du poireau
-	this.force = rawFightData.leeks[this.id].force;
-	this.frequency = rawFightData.leeks[this.id].frequency;
-	//this.id = rawFightData.leeks[this.id].id;
-	this.level = rawFightData.leeks[this.id].level;
-	this.life = rawFightData.leeks[this.id].life;
-	//this.name = rawFightData.leeks[this.id].name;
-	this.pm = rawFightData.leeks[this.id].pm;
-	this.pt = rawFightData.leeks[this.id].pt;
-	this.skin = rawFightData.leeks[this.id].skin;
-	//this.team = rawFightData.leeks[this.id].team;
+	this.agility = rawFightData.leeks[this.rawFightDataId].agility;
+	this.appearence = rawFightData.leeks[this.rawFightDataId].appearence;
+	this.cellPos = rawFightData.leeks[this.rawFightDataId].cellPos;			// Position du poireau en début de combat
+	this.farmer = rawFightData.leeks[this.rawFightDataId].farmer;			// Éleveur du poireau
+	this.force = rawFightData.leeks[this.rawFightDataId].force;
+	this.frequency = rawFightData.leeks[this.rawFightDataId].frequency;
+	this.id = rawFightData.leeks[this.rawFightDataId].id;					// Numéro unique du poireau dans le cadre du combat
+	this.level = rawFightData.leeks[this.rawFightDataId].level;
+	this.life = rawFightData.leeks[this.rawFightDataId].life;
+	//this.name = rawFightData.leeks[this.rawFightDataId].name;
+	this.pm = rawFightData.leeks[this.rawFightDataId].pm;
+	this.pt = rawFightData.leeks[this.rawFightDataId].pt;
+	this.skin = rawFightData.leeks[this.rawFightDataId].skin;
+	//this.team = rawFightData.leeks[this.rawFightDataId].team;
 
 	this.addToPTusageData = function(dataName, value) {
 		if(isNaN(this.PTusage[dataName]))
@@ -310,7 +308,6 @@ function Highlight(img, title, description, message) {
 function readTables() {
 	var report_tables = document.getElementById('report-general').getElementsByTagName('table');
 	var a = true;
-	var leekFightId = 0; // Numéro unique du poireau dans le cadre de ce combat
 	
 	for (i = 0; i < report_tables.length; i++) {
 		var team = (currentFight.teamFight) ? (i - 1) / 2 : i;
@@ -319,9 +316,7 @@ function readTables() {
 
 			for (var j = 1; j < trs.length; j++) {
 				if (trs[j].className != 'total') {
-					currentFight.addLeek(leekFightId, team, trs[j]);
-
-					leekFightId++;
+					currentFight.addLeek(team, trs[j]);
 				}
 			}
 		} else if ((currentFight.teamFight) && ((i == 0) || (i == 2))) {
@@ -660,14 +655,38 @@ function displayKikimeter() {
 	tr.appendChild(td);
 
 	for (var i in dispData) {
-        if (dispData[i] == 1) {
-            td = document.createElement('td');
-            td.appendChild(document.createTextNode(Math.round(currentFight.fightSum(i) * 10) / 10));
-            tr.appendChild(td);
-        }
+    if (dispData[i] == 1) {
+        td = document.createElement('td');
+        td.appendChild(document.createTextNode(Math.round(currentFight.fightSum(i) * 10) / 10));
+        tr.appendChild(td);
+    }
 	}
-
 	tfoot.appendChild(tr);
+	
+	//Affichage des moyennes du combat
+	tr = document.createElement('tr');
+	tr.className = 'total';
+
+	td = document.createElement('td');
+	td.className = 'name';
+
+	var span = document.createElement('span');
+	span.className = 'alive';
+
+	span.appendChild(document.createTextNode('Moyenne'));
+	td.appendChild(span);
+
+	tr.appendChild(td);
+
+	for (var i in dispData) {
+		if (dispData[i] == 1) {
+			td = document.createElement('td');
+			td.appendChild(document.createTextNode(Math.round(currentFight.fightMean(i) * 10) / 10));
+			tr.appendChild(td);
+		}
+	}
+	tfoot.appendChild(tr);
+	
 	table.appendChild(tfoot);
 	// Fin affichage des sommes du combat
 
@@ -677,7 +696,6 @@ function displayKikimeter() {
 	// Création du titre au-dessus du tableau
 	var h1 = document.createElement('h1');
 	h1.appendChild(document.createTextNode('Résumé'));
-	document.body.appendChild(h1);
 	resume.appendChild(h1);
 	resume.appendChild(table);
 
@@ -772,7 +790,6 @@ function displayPTusageTable() {
 	// Création du titre au-dessus du tableau
 	var h1 = document.createElement('h1');
 	h1.appendChild(document.createTextNode('Utilisation des PT'));
-	document.body.appendChild(h1);
 	resume.appendChild(h1);
 	resume.appendChild(table);
 
@@ -794,10 +811,9 @@ function displayHighlights() {
 		// Création du titre
 		var h1 = document.createElement('h1');
 		h1.appendChild(document.createTextNode('Hauts faits'));
-		document.body.appendChild(h1);
 		report_highlights.appendChild(h1);
 
-		for (var i in Highlights) { // Boucle sur tous les highlights
+		for (var i in Highlights) { // Boucle sur tous les highlights préalablement générés
 
 			var report_high = document.createElement('div');
 			report_high.className = 'notif';
@@ -884,10 +900,11 @@ function createLineChart() {
 				leekPV[i] = totalLife + diffPV;
 			else
 				leekPV[i] = leekPV[i-1] + diffPV;
+			if(leekPV[i] == 0) break;	// Le poireau est mort, on ne continue pas à tracer sa vie
 		}
 		var color = currentFight.leeks[leek].color;
 		var dataset = {
-				label: currentFight.leeks[leek].name,
+				label : currentFight.leeks[leek].name,
 				fillColor : color.replace(')', ', 0.1)').replace('rgb', 'rgba'),
 				strokeColor : color,
 				pointColor : color,
@@ -898,6 +915,23 @@ function createLineChart() {
 		};
 		myDatasets.push(dataset);
 	}
+	
+	/*// Balance des PV en %, ne fonctionne qu'en solo
+	var balancePV = [];
+	for (var i=0; i<currentFight.nbRounds; i++) {
+		balancePV[i] = myDatasets[0].data[i] / max(myDatasets[0].data) *100 - myDatasets[1].data[i]  / max(myDatasets[1].data) *100;
+	}
+	dataset = {
+			label : 'Balance des PV en %',
+			fillColor : 'rgba(0, 0, 0, 0)',
+			strokeColor : 'rgb(0, 0, 0)',
+			pointColor : 'rgb(0, 0, 0)',
+			pointStrokeColor : "#fff",
+			pointHighlightFill : "#fff",
+			pointHighlightStroke : 'rgb(0, 0, 0)',
+			data : balancePV
+	};
+	myDatasets.push(dataset);*/
 
 	var canvas = document.getElementById("canvas_chart");
 	var ctx = canvas.getContext("2d");
@@ -907,34 +941,35 @@ function createLineChart() {
 		responsive: false,
 		animation: false,
 		bezierCurve: false,
-		pointDotRadius: 3,
-		pointHitDetectionRadius: Math.floor(24-(currentFight.nbRounds*0.3)), //plus il y a de tours, plus la zone de détection est petite
-		datasetStrokeWidth : 1
+		pointDotRadius: 2.5,
+		pointHitDetectionRadius: Math.floor(24-(currentFight.nbRounds*0.3)), // plus il y a de tours, plus la zone de détection est petite
+		datasetStrokeWidth : 1.2
 	});
 }
 
 // Affiche le graphe d'évolution des points de chaque poireau
 function displayLineChartLeeksPV() {
-	// Uniquement si combat Solo
-	if (currentFight.nbLeeks != 2) return;
 
 	var chart = document.createElement('div');
 	chart.id = 'report-chart';
 	// Création du titre
 	var h1 = document.createElement('h1');
-	h1.appendChild(document.createTextNode('Evolution des PV'));
+	h1.appendChild(document.createTextNode('Évolution des PV'));
+	chart.appendChild(h1);
 	// Création du graphique
 	var line_chart = document.createElement('canvas');
 	line_chart.id = 'canvas_chart';
 	line_chart.width = "900";
-	line_chart.height = "400";
+	line_chart.height = "450";
 	line_chart.style.marginLeft = '35px';
+	chart.appendChild(line_chart);
+	
 	// Insertion dans le DOM
 	var page = document.getElementById('page');
 	var report_actions = document.getElementById('report-actions');
-	chart.appendChild(h1);
-	chart.appendChild(line_chart);
 	page.insertBefore(chart, report_actions);
+	
+	// Génération du graphique
 	createLineChart();
 }
 
@@ -1109,7 +1144,7 @@ function main(data) {
 	// CREATION DU GRAPHE DES PV
 	displayLineChartLeeksPV();
 
-	// CREATION DU RÉCAP D'USAGE DES PT
+	// CRÉATION DU RÉCAP D'USAGE DES PT
 	displayPTusageTable();
 
 	// AFFICHAGE DES HAUTS FAITS (HIGHLIGHTS)
