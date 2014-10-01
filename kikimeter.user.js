@@ -964,8 +964,7 @@ function createLineChart() {
 		scaleOverride: true,
 		scaleStepWidth: Math.ceil(scaleYMax / 100)*10,
 		scaleSteps: 10,
-		scaleStartValue: 0,
-		scaleStopValue: 2000
+		scaleStartValue: 0
 	});
 }
 
