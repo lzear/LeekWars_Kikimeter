@@ -9,7 +9,8 @@
 // @projectPage		https://github.com/Zear06/LeekWars_Kikimeter
 // @downloadURL		https://github.com/Zear06/LeekWars_Kikimeter/raw/master/kikimeter.user.js
 // @updateURL		https://github.com/Zear06/LeekWars_Kikimeter/raw/master/kikimeter.user.js
-// @require			https://raw.githubusercontent.com/nnnick/Chart.js/master/Chart.js
+// @require		https://raw.githubusercontent.com/nnnick/Chart.js/master/Chart.js
+// @require		https://code.jquery.com/jquery-2.1.1.min.js
 // ==/UserScript==
 
 // URL DE LA PAGE PHP QUI RÉCEPTIONNE LES DONNÉES
