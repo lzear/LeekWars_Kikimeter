@@ -136,8 +136,13 @@ function Fight() {
 		}
 		return dataNameSum;
 	}
+	
+	// Retourne la moyenne d'une data pour tous les leeks
+	this.fightMean = function(dataName) {
+		return this.fightSum(dataName) / this.nbLeeks;
+	}
 
-	// Retourne la somme d'une datas d'une équipe
+	// Retourne la somme d'une data d'une équipe
 	this.teamSum = function(teamNumber, dataName) {
 		var dataNameSum = 0;
 		for (var j in this.leeks) {
@@ -642,8 +647,32 @@ function displayKikimeter() {
 		tr.appendChild(td);
 
 	}
-
 	tfoot.appendChild(tr);
+	
+	//Affichage des moyennes du combat
+	tr = document.createElement('tr');
+	tr.className = 'total';
+
+	td = document.createElement('td');
+	td.className = 'name';
+
+	var span = document.createElement('span');
+	span.className = 'alive';
+
+	span.appendChild(document.createTextNode('Moyenne'));
+	td.appendChild(span);
+
+	tr.appendChild(td);
+
+	for (var i in dispData) {
+
+		td = document.createElement('td');
+		td.appendChild(document.createTextNode(Math.round(currentFight.fightMean(dispData[i]) * 10) / 10));
+		tr.appendChild(td);
+
+	}
+	tfoot.appendChild(tr);
+	
 	table.appendChild(tfoot);
 	// Fin affichage des sommes du combat
 
