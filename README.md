@@ -15,7 +15,7 @@ script JavaScript pour TamperMonkey ou GreaseMonkey.
   
 Tous les tableaux peuvent être triés en cliquant sur les entêtes de colonne.
   
-  Si une URL vers le fichier **get.php** est défini(e), le script envoie les données du combat au format JSON via une requête POST.
+  Si une URL vers le fichier **app/get.php** est défini(e), le script envoie les données du combat au format JSON via une requête POST.
     
     
 get.php
@@ -24,8 +24,8 @@ get.php
 Optionnel.
 
 Nécessite :
-   * l'accès à une base de donnée.
-   * fichier `connect.php` pour s'y connecter.
+   * l'accès à une base de donnée MySQL ou PostgreSQL.
+   * fichier `connect-mysql.php` ou `connect-postgres.php` pour s'y connecter.
    * une table `leekwars_data` (la définition de la table est donnée en commentaire dans le fichier PHP).
 
 Receptionne les données.
