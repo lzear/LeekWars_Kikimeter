@@ -3,7 +3,7 @@
 // @version			0.03
 // @description  	Ce script affiche un résumé des combats de leekwars
 // @match      		http://leekwars.com/report/*
-// @author			Elzéar, yLark, Foudge
+// @author			Elzéar, yLark, Foudge, Corshclaw
 // @grant			none
 // @projectPage		https://github.com/Zear06/LeekWars_Kikimeter
 // @downloadURL		https://github.com/Zear06/LeekWars_Kikimeter/raw/master/kikimeter.user.js
@@ -18,6 +18,11 @@ var dataReceiverURL = ''; // http://<TRUC>/get.php
 var dispData = [
 	'level',
 //	'XP',
+	'dmg_in',
+	'dmg_out',
+	'heal_in',
+	'heal_out',
+	'lastHits',
 	'roundsPlayed',
 	'usedPT',
 	'PTperTurn',
@@ -26,16 +31,11 @@ var dispData = [
 //	'equipWeapon',
 	'actionsWeapon',
 	'actionsChip',
-	'dmg_in',
-//	'dmg_out',
-	'heal_in',
-//	'heal_out',
-	'lastHits',
 //	'gainXP',
 //	'gainTalent',
 //	'gainHabs',
 	'fails',
-	'blabla',
+//	'blabla',
 	'crashes',
 //	'agility',
 //	'appearence',
@@ -1092,8 +1092,8 @@ function main(data) {
 			'gainTalent',
 			'gainHabs',
 			'roundsPlayed',
-			'PT',
-			'PM',
+			'usedPT',
+			'usedPM',
 			'equipWeapon',
 			'actionsWeapon',
 			'actionsChip',
