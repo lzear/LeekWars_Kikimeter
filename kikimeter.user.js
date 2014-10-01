@@ -15,14 +15,6 @@
 // URL DE LA PAGE PHP QUI RÉCEPTIONNE LES DONNÉES
 var dataReceiverURL = ''; // http://<TRUC>/get.php
 
-var cookieDataReceiverURL = GM_getValue("kikimeter-dataReceiverURL", "");
-if (cookieDataReceiverURL != "" && (cookieDataReceiverURL == dataReceiverURL || dataReceiverURL == "")) {
-	dataReceiverURL = cookieDataReceiverURL;
-}
-else {
-	GM_setValue("kikimeter-dataReceiverURL", dataReceiverURL);
-}
-
 // Données affichées par défaut (1 = affiché, 0 = masqué)
 var dispData = {
 	'level' : 1,
@@ -58,7 +50,17 @@ var dispData = {
 	'skin' : 0
 };
 
-// Récupération de la configuration dans les cookies. Si un cookie n'est pas présent, on le crée avec la valeur par défaut du tableau
+
+// Récupération de la configuration dans le local storage. Si une valeur n'est pas présente, on prend la valeur par défaut
+
+var cookieDataReceiverURL = GM_getValue("kikimeter-dataReceiverURL", "");
+if (cookieDataReceiverURL != "" && (cookieDataReceiverURL == dataReceiverURL || dataReceiverURL == "")) {
+	dataReceiverURL = cookieDataReceiverURL;
+}
+else {
+	GM_setValue("kikimeter-dataReceiverURL", dataReceiverURL);
+}
+
 for (var key in dispData) {
 	var value = GM_getValue("kikimeter-" + key, "");
 	if (value !== "") {
@@ -995,21 +997,20 @@ function displayLineChartLeeksPV() {
 
 // Affiche les options de configuration
 function displayConfig() {
-	var configDiv = '<center><div class="button" id="kikimeter-config-toggle">Afficher/Masquer la configuration</div></center><div id="kikimeter-config"><h1>Configuration</h1></div>';
+	// Création de la div de configuration, avec bouton de toggle
+	var configDiv = '<center><div class="button" id="kikimeter-config-toggle">Afficher/Masquer la configuration</div></center><h1>Configuration</h1><div id="kikimeter-config" class="report"></div>';
   $(configDiv).insertBefore("#report-actions");
-
-	var configTableDiv = '<h2>Colonnes du Résumé</h2><div id="kikimeter-config-table"></div>';
   var config = $('#kikimeter-config');
+  $('#kikimeter-config-toggle').click(function() {
+  	config.toggle();
+  });
+	config.toggle();
+
+  // Configuration du tableau Résumé
+	var configTableDiv = '<h2>Colonnes du Résumé</h2><div id="kikimeter-config-table"></div>';
   config.append(configTableDiv);
 
   var configTable = $('#kikimeter-config-table');
-  configTable.css('column-count', 4);
-  configTable.css('-moz-column-count', 4);
-  configTable.css('-webkit-column-count', 4);
-  configTable.css('column-gap', 25);
-  configTable.css('-moz-column-gap', 25);
-  configTable.css('-webkit-column-gap', 25);
-
   for (var key in dispData) {
     configTable.append('<div><input type="checkbox" id="kikimeter-' + key + '" name="' + key + '"' + (dispData[key]==1 ? 'checked' : '') + '/><label for="kikimeter-' + key + '">' + (leekData[key]||roundData[key]) + '</label></div>');   
   }
@@ -1021,11 +1022,28 @@ function displayConfig() {
   	GM_setValue("kikimeter-" + key, value);
   });
 
-  $('#kikimeter-config-toggle').click(function() {
-  	config.toggle();
+  // Configuration de l'URL d'envoi des données
+	var configDataReceiverURLDiv = '<h2>URL d\'envoi des données (get.php)</h2><div id="kikimeter-config-dataReceiverURL"></div>';
+  config.append(configDataReceiverURLDiv);
+  var configDataReceiverURL = $('#kikimeter-config-dataReceiverURL');
+  configDataReceiverURL.append('<div><input type="text" value="' + dataReceiverURL + '" id="kikimeter-field-dataReceiverURL"/></div>');
+  var configDataReceiverURLField = $('#kikimeter-field-dataReceiverURL');
+  configDataReceiverURLField.change(function() {
+  	dataReceiverURL = $(this).val();
+  	GM_setValue("kikimeter-dataReceiverURL", dataReceiverURL);
   });
 
-	config.toggle();
+  // Application des CSS
+	config.css("margin-bottom", "50px");
+	config.find('h2').css("margin-top", "20px");
+	config.css("background", "none");
+  configTable.css('column-count', 4);
+  configTable.css('-moz-column-count', 4);
+  configTable.css('-webkit-column-count', 4);
+  configTable.css('column-gap', 25);
+  configTable.css('-moz-column-gap', 25);
+  configTable.css('-webkit-column-gap', 25);
+  configDataReceiverURLField.css("width", "500px");
 }
 
 //	Permet de trier les tableaux html en appelant le script présenté ici : http://www.kryogenix.org/code/browser/sorttable
@@ -1128,26 +1146,6 @@ function getXMLHttpRequest() {
 
 	return xhr;
 }
-
-/*
-function setCookie(cname, cvalue, exdays) {
-  var d = new Date();
-  d.setTime(d.getTime() + (exdays*24*60*60*1000));
-  var expires = "expires="+d.toUTCString();
-  document.cookie = cname + "=" + cvalue + "; " + expires;
-}
-
-function getCookie(cname) {
-  var name = cname + "=";
-  var ca = document.cookie.split(';');
-  for(var i=0; i<ca.length; i++) {
-      var c = ca[i];
-      while (c.charAt(0)==' ') c = c.substring(1);
-      if (c.indexOf(name) != -1) return c.substring(name.length,c.length);
-  }
-  return "";
-}
-*/
 
 var rawFightData;		// Objet stockant les données du combat récupérées depuis la page http://leekwars.com/fight_get
 var currentFight;		// Stock les données du combat
