@@ -39,18 +39,22 @@ var dispData = {
 	'fails': 1,
 	'blabla': 0,
 	'crashes': 1,
-	'agility': 0,
-	'appearence': 0,
 	'cellPos': 0,
 	'farmer': 0,
-	'force': 0,
-	'frequency': 0,
 	'id': 0,
 	'life': 0,
-	'pm': 0,
+	'force': 0,
+	'agility': 0,
 	'pt': 0,
+	'pm': 0,
+	'frequency': 0,
+	'appearence': 0,
 	'skin': 0
 };
+
+// STATICS
+var STORAGE_PREFIX = "kikimeter-";
+var STORAGE_DISPLAY_PREFIX = "kikimeter-display-";
 
 // Récupération de la configuration dans le local storage. Si une valeur n'est pas présente, on prend la valeur par défaut
 
@@ -62,11 +66,11 @@ if (cookieDataReceiverURL != "" && (cookieDataReceiverURL == dataReceiverURL || 
 }
 
 for (var key in dispData) {
-	var value = GM_getValue("kikimeter-" + key, "");
+	var value = GM_getValue(STORAGE_PREFIX + key, "");
 	if (value !== "") {
 		dispData[key] = value;
 	} else {
-		GM_setValue("kikimeter-" + key, dispData[key]);
+		GM_setValue(STORAGE_PREFIX + key, dispData[key]);
 	}
 }
 
@@ -1030,13 +1034,13 @@ function displayConfig() {
 
 	var configModules = $('#kikimeter-config-modules');
 	for (var key in leekikimeterModules) {
-		var checked = GM_getValue("kikimeter-display-" + key, 1);
-		configModules.append('<div><input type="checkbox" id="kikimeter-display-' + key + '" name="' + key + '"' + (checked == 1 ? 'checked' : '') + '/><label for="kikimeter-display-' + key + '">' + leekikimeterModules[key] + '</label></div>');
+		var checked = GM_getValue(STORAGE_DISPLAY_PREFIX + key, 1);
+		configModules.append('<div><input type="checkbox" id="' + STORAGE_DISPLAY_PREFIX + key + '" name="' + key + '"' + (checked == 1 ? 'checked' : '') + '/><label for="' + STORAGE_DISPLAY_PREFIX + key + '">' + leekikimeterModules[key] + '</label></div>');
 	}
 	$('#kikimeter-config-modules input[type=checkbox]').change(function() {
 		var key = $(this).attr('name');
 		var value = $(this).is(':checked') ? 1 : 0;
-		GM_setValue("kikimeter-display-" + key, value);
+		GM_setValue(STORAGE_DISPLAY_PREFIX + key, value);
 		$('#'+key).toggle();
 	});
 
@@ -1046,14 +1050,14 @@ function displayConfig() {
 
 	var configTable = $('#kikimeter-config-table');
 	for (var key in dispData) {
-		configTable.append('<div><input type="checkbox" id="kikimeter-' + key + '" name="' + key + '"' + (dispData[key] == 1 ? 'checked' : '') + '/><label for="kikimeter-' + key + '">' + (leekData[key] || roundData[key]) + '</label></div>');
+		configTable.append('<div><input type="checkbox" id="' + STORAGE_PREFIX + key + '" name="' + key + '"' + (dispData[key] == 1 ? 'checked' : '') + '/><label for="' + STORAGE_PREFIX + key + '">' + allData[key] + '</label></div>');
 	}
 
 	$('#kikimeter-config input[type=checkbox]').change(function() {
 		var key = $(this).attr('name');
 		var value = $(this).is(':checked') ? 1 : 0;
 		dispData[key] = value;
-		GM_setValue("kikimeter-" + key, value);
+		GM_setValue(STORAGE_PREFIX + key, value);
 	});
 
 	// Configuration de l'URL d'envoi des données
@@ -1082,7 +1086,7 @@ function displayConfig() {
 
 function initConfig() {
 	for (var key in leekikimeterModules) {
-		var display = GM_getValue("kikimeter-display-" + key, 1);
+		var display = GM_getValue(STORAGE_DISPLAY_PREFIX + key, 1);
 		if (display == 0) {
 			$("#"+key).hide();
 		}
