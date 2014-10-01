@@ -1,16 +1,17 @@
 // ==UserScript==
 // @name       		LeekWars : LeeKikiMeter
-// @version			0.03
+// @version				0.03
 // @description  	Ce script affiche un résumé des combats de leekwars
 // @match      		http://leekwars.com/report/*
-// @author			Elzéar, yLark, Foudge, Corshclaw
-// @grant   		GM_getValue
-// @grant   		GM_setValue
+// @author				Elzéar, yLark, Foudge, Corshclaw
+// @grant   			GM_getValue
+// @grant   			GM_setValue
 // @projectPage		https://github.com/Zear06/LeekWars_Kikimeter
 // @downloadURL		https://github.com/Zear06/LeekWars_Kikimeter/raw/master/kikimeter.user.js
-// @updateURL		https://github.com/Zear06/LeekWars_Kikimeter/raw/master/kikimeter.user.js
-// @require		https://raw.githubusercontent.com/nnnick/Chart.js/master/Chart.js
-// @require		https://code.jquery.com/jquery-2.1.1.min.js
+// @updateURL			https://github.com/Zear06/LeekWars_Kikimeter/raw/master/kikimeter.user.js
+// @require				https://code.jquery.com/jquery-2.1.1.min.js
+// @require				https://raw.githubusercontent.com/nnnick/Chart.js/master/Chart.js
+// @require				http://kryogenix.org/code/browser/sorttable/sorttable.js
 // ==/UserScript==
 
 // URL DE LA PAGE PHP QUI RÉCEPTIONNE LES DONNÉES
@@ -18,47 +19,45 @@ var dataReceiverURL = ''; // http://<TRUC>/get.php
 
 // Données affichées par défaut (1 = affiché, 0 = masqué)
 var dispData = {
-	'level' : 1,
-	'XP' : 0,
-	'dmg_in' : 1,
-	'dmg_out' : 1,
-	'heal_in' : 1,
-	'heal_out' : 1,
-	'lastHits' : 1,
-	'usedPT' : 1,
-	'PTperTurn' : 1,
-	'usedPM' : 1,
-	'roundsPlayed' : 1,
-	'equipWeapon' : 0,
-	'actionsWeapon' : 1,
-	'actionsChip' : 1,
-	'gainXP' : 0,
-	'gainTalent' : 0,
-	'gainHabs' : 0,
-	'fails' : 1,
-	'blabla' : 0,
-	'crashes' : 1,
-	'agility' : 0,
-	'appearence' : 0,
-	'cellPos' : 0,
-	'farmer' : 0,
-	'force' : 0,
-	'frequency' : 0,
-	'id' : 0,
-	'life' : 0,
-	'pm' : 0,
-	'pt' : 0,
-	'skin' : 0
+	'level': 1,
+	'XP': 0,
+	'dmg_in': 1,
+	'dmg_out': 1,
+	'heal_in': 1,
+	'heal_out': 1,
+	'lastHits': 1,
+	'usedPT': 1,
+	'PTperTurn': 1,
+	'usedPM': 1,
+	'roundsPlayed': 1,
+	'equipWeapon': 0,
+	'actionsWeapon': 1,
+	'actionsChip': 1,
+	'gainXP': 0,
+	'gainTalent': 0,
+	'gainHabs': 0,
+	'fails': 1,
+	'blabla': 0,
+	'crashes': 1,
+	'agility': 0,
+	'appearence': 0,
+	'cellPos': 0,
+	'farmer': 0,
+	'force': 0,
+	'frequency': 0,
+	'id': 0,
+	'life': 0,
+	'pm': 0,
+	'pt': 0,
+	'skin': 0
 };
-
 
 // Récupération de la configuration dans le local storage. Si une valeur n'est pas présente, on prend la valeur par défaut
 
 var cookieDataReceiverURL = GM_getValue("kikimeter-dataReceiverURL", "");
 if (cookieDataReceiverURL != "" && (cookieDataReceiverURL == dataReceiverURL || dataReceiverURL == "")) {
 	dataReceiverURL = cookieDataReceiverURL;
-}
-else {
+} else {
 	GM_setValue("kikimeter-dataReceiverURL", dataReceiverURL);
 }
 
@@ -66,11 +65,20 @@ for (var key in dispData) {
 	var value = GM_getValue("kikimeter-" + key, "");
 	if (value !== "") {
 		dispData[key] = value;
-	}
-	else {
+	} else {
 		GM_setValue("kikimeter-" + key, dispData[key]);
 	}
 }
+
+// Modules
+var leekikimeterModules = {
+	'report-general' : 'Rapport de combat',
+	'report-resume' : 'Résumé',
+	'report-chart' : 'Évolution des PV',
+	'report-PTusageTable' : 'Utilisation des PT',
+	'report-highlights' : 'Hauts faits',
+	'report-actions' : 'Actions'
+};
 
 // Intitulés des variables
 var leekData = { // variables relatives aux Leeks
@@ -158,7 +166,7 @@ function Fight() {
 		}
 		return dataNameSum;
 	}
-	
+
 	// Retourne la moyenne d'une data pour tous les leeks
 	this.fightMean = function(dataName) {
 		return this.fightSum(dataName) / this.nbLeeks;
@@ -174,25 +182,30 @@ function Fight() {
 		}
 		return dataNameSum;
 	}
-	
+
 	// Retourne un tableau de toutes les actions réalisées au cours du combat : {'action' : nom_de_laction, 'PTcount' : nombre_de_PT_utilisés_par_tous_les_poireaux}
 	this.actionsDone = function() {
 		var actionsDone = [];
-		for (var i in this.leeks) {											// Boucle sur les poireaux
-			for(var j in this.leeks[i].PTusage) {							// Boucle sur les actions réalisées par ce poireau
-				if(actionsDone[j] == undefined || actionsDone[j] == null)	// Test si l'action n'a pas déjà été stockée dans le tableau
-					actionsDone[j] = {'action' : j, 'PTcount' : 0};			// Créé l'action dans le tableau récap
-				actionsDone[j].PTcount += this.leeks[i].PTusage[j];			// Incrémente l'action du nombre de PT
+		for (var i in this.leeks) { // Boucle sur les poireaux
+			for (var j in this.leeks[i].PTusage) { // Boucle sur les actions réalisées par ce poireau
+				if (actionsDone[j] == undefined || actionsDone[j] == null) // Test si l'action n'a pas déjà été stockée dans le tableau
+					actionsDone[j] = {
+					'action': j,
+					'PTcount': 0
+				}; // Créé l'action dans le tableau récap
+				actionsDone[j].PTcount += this.leeks[i].PTusage[j]; // Incrémente l'action du nombre de PT
 			}
 		}
-		
+
 		// Supprime les clef du tableau (sinon, le tri ne fonctionne pas)
 		var tempArray = [];
-		for(var i in actionsDone) tempArray.push(actionsDone[i]);
-		
+		for (var i in actionsDone) tempArray.push(actionsDone[i]);
+
 		// Tri le tableau
-		tempArray.sort(function(a,b){return b.PTcount - a.PTcount});
-		
+		tempArray.sort(function(a, b) {
+			return b.PTcount - a.PTcount
+		});
+
 		return tempArray;
 	}
 
@@ -219,7 +232,7 @@ function Leek(name, team, tr) {
 	this.gainHabs = parseInt(tr.getElementsByClassName('money')[0].children[0].firstChild.textContent.replace(/[^\d.]/g, ''));
 	this.round = {};
 	this.PTusage = {};
-	
+
 	// Récupère l'id du poireau en se basant sur son nom (ne fonctionne pas en cas de combat contre soi-même)
 	for (var leek in rawFightData.leeks) {
 		if (rawFightData.leeks[leek].name == this.name) {
@@ -227,14 +240,14 @@ function Leek(name, team, tr) {
 			break;
 		}
 	}
-	
+
 	this.agility = rawFightData.leeks[this.rawFightDataId].agility;
 	this.appearence = rawFightData.leeks[this.rawFightDataId].appearence;
-	this.cellPos = rawFightData.leeks[this.rawFightDataId].cellPos;			// Position du poireau en début de combat
-	this.farmer = rawFightData.leeks[this.rawFightDataId].farmer;			// Éleveur du poireau
+	this.cellPos = rawFightData.leeks[this.rawFightDataId].cellPos; // Position du poireau en début de combat
+	this.farmer = rawFightData.leeks[this.rawFightDataId].farmer; // Éleveur du poireau
 	this.force = rawFightData.leeks[this.rawFightDataId].force;
 	this.frequency = rawFightData.leeks[this.rawFightDataId].frequency;
-	this.id = rawFightData.leeks[this.rawFightDataId].id;					// Numéro unique du poireau dans le cadre du combat
+	this.id = rawFightData.leeks[this.rawFightDataId].id; // Numéro unique du poireau dans le cadre du combat
 	this.level = rawFightData.leeks[this.rawFightDataId].level;
 	this.life = rawFightData.leeks[this.rawFightDataId].life;
 	//this.name = rawFightData.leeks[this.rawFightDataId].name;
@@ -244,7 +257,7 @@ function Leek(name, team, tr) {
 	//this.team = rawFightData.leeks[this.rawFightDataId].team;
 
 	this.addToPTusageData = function(dataName, value) {
-		if(isNaN(this.PTusage[dataName]))
+		if (isNaN(this.PTusage[dataName]))
 			this.PTusage[dataName] = 0;
 		this.PTusage[dataName] += value;
 	};
@@ -320,7 +333,7 @@ function Highlight(img, title, description, message) {
 function readTables() {
 	var report_tables = document.getElementById('report-general').getElementsByTagName('table');
 	var a = true;
-	
+
 	for (i = 0; i < report_tables.length; i++) {
 		var team = (currentFight.teamFight) ? (i - 1) / 2 : i;
 		if ((!currentFight.teamFight) || (i == 1) || (i == 3)) {
@@ -340,12 +353,12 @@ function readTables() {
 // Lit la liste des actions
 function readActions() {
 	var actions = document.getElementById('actions').children;
-	
+
 	var attacker;
-	var lastPTcount = null;		// Stock le dernier décompte de PT, pour le suivi de l'usage des PT par arme/puce/etc.
-	var lastPTaction = null;	// Stock la dernière action, pour le suivi de l'usage des PT par arme/puce/etc.
-	var currentWeapon = [];		// Stock l'arme actuellement équipée pour chaque poireau
-	
+	var lastPTcount = null; // Stock le dernier décompte de PT, pour le suivi de l'usage des PT par arme/puce/etc.
+	var lastPTaction = null; // Stock la dernière action, pour le suivi de l'usage des PT par arme/puce/etc.
+	var currentWeapon = []; // Stock l'arme actuellement équipée pour chaque poireau
+
 	for (var i in actions) {
 		// NUMÉRO DE TOUR
 		if (/^Tour ([0-9]+)$/.test(actions[i].textContent)) {
@@ -373,7 +386,7 @@ function readActions() {
 			currentFight.leeks[RegExp.$1].writeRoundData(round, 'roundsPlayed', 1);
 			currentFight.leeks[RegExp.$1].writeData('color', actions[i].children[0].style.color); // Récupère et stock la couleur du texte du poireau
 			var currentLeek = RegExp.$1;
-			attacker = null;	// Réinitialise l'attacker. Permet de ne pas lui attribuer des heal ou damage overtime lancés par un autre
+			attacker = null; // Réinitialise l'attacker. Permet de ne pas lui attribuer des heal ou damage overtime lancés par un autre
 		}
 
 		// usedPT
@@ -390,20 +403,20 @@ function readActions() {
 		// DEGATS
 		if (/^([^\s]+) perd ([0-9]+) PV$/.test(actions[i].textContent)) {
 			currentFight.leeks[RegExp.$1].addToRoundData(round, 'dmg_in', parseInt(RegExp.$2.replace(/[^\d.]/g, '')));
-			if(attacker != null) currentFight.leeks[attacker].addToRoundData(round, 'dmg_out', parseInt(RegExp.$2.replace(/[^\d.]/g, '')));
+			if (attacker != null) currentFight.leeks[attacker].addToRoundData(round, 'dmg_out', parseInt(RegExp.$2.replace(/[^\d.]/g, '')));
 		}
 
 		// SOINS
 		if (/^([^\s]+) gagne ([0-9]+) PV$/.test(actions[i].textContent)) {
 			currentFight.leeks[RegExp.$1].addToRoundData(round, 'heal_in', parseInt(RegExp.$2.replace(/[^\d.]/g, '')));
-			if(attacker != null) currentFight.leeks[attacker].addToRoundData(round, 'heal_out', parseInt(RegExp.$2.replace(/[^\d.]/g, '')));
+			if (attacker != null) currentFight.leeks[attacker].addToRoundData(round, 'heal_out', parseInt(RegExp.$2.replace(/[^\d.]/g, '')));
 		}
 
 		// ARME ÉQUIPÉE
 		//if (/^([^\s]+) prend l'arme ([^\s]+)$/.test(actions[i].textContent)) {
 		if (/^([^\s]+) prend l'arme (.+)$/.test(actions[i].textContent)) {
 			currentFight.leeks[RegExp.$1].addToRoundData(round, 'equipWeapon', 1);
-			currentWeapon[RegExp.$1] = RegExp.$2;	// Stock l'arme en cours du poireau
+			currentWeapon[RegExp.$1] = RegExp.$2; // Stock l'arme en cours du poireau
 			lastPTaction = 'Arme équipée';
 		}
 
@@ -434,9 +447,9 @@ function readActions() {
 		if (/^([^\s]+) a planté !$/.test(actions[i].textContent)) {
 			currentFight.leeks[RegExp.$1].addToRoundData(round, 'crashes', 1);
 		}
-		
+
 		// Incrémente les données de la dernière action. Comme parfois les PT sont décomptés avant que les actions ne soient annoncées, ou vice-versa, on attend que les deux infos soient rassemblées pour comptabiliser
-		if(lastPTaction != null && lastPTcount != null) {
+		if (lastPTaction != null && lastPTcount != null) {
 			currentFight.leeks[currentLeek].addToPTusageData(lastPTaction, lastPTcount);
 			lastPTaction = null;
 			lastPTcount = null;
@@ -596,11 +609,11 @@ function displayKikimeter() {
 	tr.appendChild(th);
 
 	for (var i in dispData) {
-    if (dispData[i] == 1) {
-      var th = document.createElement('th');
-      th.appendChild(document.createTextNode(allData[i]));
-      tr.appendChild(th);
-    }
+		if (dispData[i] == 1) {
+			var th = document.createElement('th');
+			th.appendChild(document.createTextNode(allData[i]));
+			tr.appendChild(th);
+		}
 	}
 
 	thead.appendChild(tr);
@@ -635,13 +648,13 @@ function displayKikimeter() {
 		tr.appendChild(td);
 
 		for (var i in dispData) {
-      if (dispData[i] == 1) {
-        var disp = (isNaN(currentFight.leeks[j][i])) ? currentFight.leeks[j][i] : Math.round(currentFight.leeks[j][i] * 10) / 10;
-        td = document.createElement('td');
-        //td.appendChild(document.createTextNode(Math.round(currentFight.leeks[j][dispData[i]]*10)/10));
-        td.appendChild(document.createTextNode((disp)));
-        tr.appendChild(td);
-      }
+			if (dispData[i] == 1) {
+				var disp = (isNaN(currentFight.leeks[j][i])) ? currentFight.leeks[j][i] : Math.round(currentFight.leeks[j][i] * 10) / 10;
+				td = document.createElement('td');
+				//td.appendChild(document.createTextNode(Math.round(currentFight.leeks[j][dispData[i]]*10)/10));
+				td.appendChild(document.createTextNode((disp)));
+				tr.appendChild(td);
+			}
 		}
 
 		tbody.appendChild(tr);
@@ -667,14 +680,14 @@ function displayKikimeter() {
 	tr.appendChild(td);
 
 	for (var i in dispData) {
-    if (dispData[i] == 1) {
-        td = document.createElement('td');
-        td.appendChild(document.createTextNode(Math.round(currentFight.fightSum(i) * 10) / 10));
-        tr.appendChild(td);
-    }
+		if (dispData[i] == 1) {
+			td = document.createElement('td');
+			td.appendChild(document.createTextNode(Math.round(currentFight.fightSum(i) * 10) / 10));
+			tr.appendChild(td);
+		}
 	}
 	tfoot.appendChild(tr);
-	
+
 	//Affichage des moyennes du combat
 	tr = document.createElement('tr');
 	tr.className = 'total';
@@ -698,7 +711,7 @@ function displayKikimeter() {
 		}
 	}
 	tfoot.appendChild(tr);
-	
+
 	table.appendChild(tfoot);
 	// Fin affichage des sommes du combat
 
@@ -720,7 +733,7 @@ function displayKikimeter() {
 // Affiche le tableau d'usage des PT
 function displayPTusageTable() {
 	var actionsDone = currentFight.actionsDone();
-	
+
 	var table = document.createElement('table');
 	table.className = 'report';
 
@@ -732,11 +745,11 @@ function displayPTusageTable() {
 	var th = document.createElement('th');
 	th.appendChild(document.createTextNode('Action'));
 	tr.appendChild(th);
-	
+
 	// Créé les entêtes de colonnes avec les noms des poireaux
 	for (var j in currentFight.leeks) {
 		var th = document.createElement('th');
-		
+
 		if (currentFight.leeks[j]['alive']) {
 			var span = document.createElement('span');
 			//span.className = 'alive';
@@ -752,13 +765,13 @@ function displayPTusageTable() {
 		th.appendChild(span);
 		tr.appendChild(th);
 	}
-	
+
 	// Total, en dernière colonne de l'entête
 	var th = document.createElement('th');
 	th.appendChild(document.createTextNode('Total'));
 	th.className = 'total';
 	tr.appendChild(th);
-	
+
 	thead.appendChild(tr);
 	table.appendChild(thead);
 
@@ -771,26 +784,26 @@ function displayPTusageTable() {
 		td.appendChild(document.createTextNode(actionsDone[i]['action']));
 		td.className = 'name';
 		tr.appendChild(td);
-		
+
 		for (var j in currentFight.leeks) {
 			var actionPT = currentFight.leeks[j].PTusage[actionsDone[i]['action']];
-			if(isNaN(actionPT)) actionPT = 0;
+			if (isNaN(actionPT)) actionPT = 0;
 			var disp = Math.round(actionPT / currentFight.leeks[j]['usedPT'] * 100) / 1;
 			td = document.createElement('td');
-			if(!isNaN(disp) && actionPT != 0) td.appendChild(document.createTextNode(disp + '%'));
+			if (!isNaN(disp) && actionPT != 0) td.appendChild(document.createTextNode(disp + '%'));
 			td.title = actionPT + ' PT';
-			td.setAttribute('sorttable_customkey', actionPT);		// Permet un tri correct par le plugin JavaScript sorttable : http://www.kryogenix.org/code/browser/sorttable/#customkeys
+			td.setAttribute('sorttable_customkey', actionPT); // Permet un tri correct par le plugin JavaScript sorttable : http://www.kryogenix.org/code/browser/sorttable/#customkeys
 			tr.appendChild(td);
 		}
-		
+
 		// Total, en dernière colonne de la ligne
 		td = document.createElement('td');
-		td.appendChild(document.createTextNode(Math.round(actionsDone[i]['PTcount'] / currentFight.fightSum('usedPT')*100 ) + '%'));
+		td.appendChild(document.createTextNode(Math.round(actionsDone[i]['PTcount'] / currentFight.fightSum('usedPT') * 100) + '%'));
 		td.title = actionsDone[i]['PTcount'] + ' PT';
-		td.setAttribute('sorttable_customkey', actionsDone[i]['PTcount']);		// Permet un tri correct par le plugin JavaScript sorttable : http://www.kryogenix.org/code/browser/sorttable/#customkeys
+		td.setAttribute('sorttable_customkey', actionsDone[i]['PTcount']); // Permet un tri correct par le plugin JavaScript sorttable : http://www.kryogenix.org/code/browser/sorttable/#customkeys
 		td.className = 'total';
 		tr.appendChild(td);
-		
+
 		tbody.appendChild(tr);
 	}
 	table.appendChild(tbody);
@@ -895,37 +908,37 @@ function createLineChart() {
 
 	var roundLabels = [];
 	for (var i = 0; i < currentFight.nbRounds; i++) {
-		roundLabels[i] = "Tour " + (i+1);
+		roundLabels[i] = "Tour " + (i + 1);
 	}
 
 	var myDatasets = [];
 	for (var leek in currentFight.leeks) {
 		var totalLife = currentFight.leeks[leek].life;
 		var leekPV = [];
-		for (var i=0; i<currentFight.nbRounds; i++) {
-			var dmg_in = currentFight.leeks[leek].getRoundData(i+1, 'dmg_in');
-			var heal_in = currentFight.leeks[leek].getRoundData(i+1, 'heal_in');
+		for (var i = 0; i < currentFight.nbRounds; i++) {
+			var dmg_in = currentFight.leeks[leek].getRoundData(i + 1, 'dmg_in');
+			var heal_in = currentFight.leeks[leek].getRoundData(i + 1, 'heal_in');
 			var diffPV = ((heal_in != null) ? heal_in : 0) - ((dmg_in != null) ? dmg_in : 0);
 			if (i == 0)
 				leekPV[i] = totalLife + diffPV;
 			else
-				leekPV[i] = leekPV[i-1] + diffPV;
-			if(leekPV[i] == 0) break;	// Le poireau est mort, on ne continue pas à tracer sa vie
+				leekPV[i] = leekPV[i - 1] + diffPV;
+			if (leekPV[i] == 0) break; // Le poireau est mort, on ne continue pas à tracer sa vie
 		}
 		var color = currentFight.leeks[leek].color;
 		var dataset = {
-				label : currentFight.leeks[leek].name,
-				fillColor : color.replace(')', ', 0.1)').replace('rgb', 'rgba'),
-				strokeColor : color,
-				pointColor : color,
-				pointStrokeColor : "#fff",
-				pointHighlightFill : "#fff",
-				pointHighlightStroke : color,
-				data : leekPV
+			label: currentFight.leeks[leek].name,
+			fillColor: color.replace(')', ', 0.1)').replace('rgb', 'rgba'),
+			strokeColor: color,
+			pointColor: color,
+			pointStrokeColor: "#fff",
+			pointHighlightFill: "#fff",
+			pointHighlightStroke: color,
+			data: leekPV
 		};
 		myDatasets.push(dataset);
 	}
-	
+
 	/*// Balance des PV en %, ne fonctionne qu'en solo
 	var balancePV = [];
 	for (var i=0; i<currentFight.nbRounds; i++) {
@@ -942,30 +955,33 @@ function createLineChart() {
 			data : balancePV
 	};
 	myDatasets.push(dataset);*/
-	
+
 	// Calcul d'une échelle de l'axe Y correcte
 	var scaleYMax = 0;
-	for(var i in myDatasets){
-		if(max(myDatasets[i].data) > scaleYMax)
+	for (var i in myDatasets) {
+		if (max(myDatasets[i].data) > scaleYMax)
 			scaleYMax = max(myDatasets[i].data);
 	}
 	var multiplier = Math.pow(10, scaleYMax.toString().length - 2);
 	scaleYMax = Math.ceil(scaleYMax / multiplier) * multiplier;
-	
+
 	var canvas = document.getElementById("canvas_chart");
 	var ctx = canvas.getContext("2d");
 	var chart = new Chart(ctx);
-	var lineChartData = { labels: roundLabels, datasets: myDatasets };
+	var lineChartData = {
+		labels: roundLabels,
+		datasets: myDatasets
+	};
 	window.myLine = chart.Line(lineChartData, {
 		responsive: false,
 		animation: false,
 		bezierCurve: false,
-		scaleGridLineColor : "rgba(0,0,0,.04)",
+		scaleGridLineColor: "rgba(0,0,0,.04)",
 		pointDotRadius: 2.5,
-		pointHitDetectionRadius: Math.floor(24-(currentFight.nbRounds*0.3)), // plus il y a de tours, plus la zone de détection est petite
-		datasetStrokeWidth : 1.2,
+		pointHitDetectionRadius: Math.floor(24 - (currentFight.nbRounds * 0.3)), // plus il y a de tours, plus la zone de détection est petite
+		datasetStrokeWidth: 1.2,
 		scaleOverride: true,
-		scaleStepWidth: Math.ceil(scaleYMax / 100)*10,
+		scaleStepWidth: Math.ceil(scaleYMax / 100) * 10,
 		scaleSteps: 10,
 		scaleStartValue: 0
 	});
@@ -986,12 +1002,12 @@ function displayLineChartLeeksPV() {
 	line_chart.height = "450";
 	line_chart.style.marginLeft = '35px';
 	chart.appendChild(line_chart);
-	
+
 	// Insertion dans le DOM
 	var page = document.getElementById('page');
 	var report_actions = document.getElementById('report-actions');
 	page.insertBefore(chart, report_actions);
-	
+
 	// Génération du graphique
 	createLineChart();
 }
@@ -999,67 +1015,88 @@ function displayLineChartLeeksPV() {
 // Affiche les options de configuration
 function displayConfig() {
 	// Création de la div de configuration, avec bouton de toggle
-	var configDiv = '<center><div class="button" id="kikimeter-config-toggle">Afficher/Masquer la configuration</div></center><h1>Configuration</h1><div id="kikimeter-config" class="report"></div>';
-  $(configDiv).insertBefore("#report-actions");
-  var config = $('#kikimeter-config');
-  $('#kikimeter-config-toggle').click(function() {
-  	config.toggle();
-  });
-	config.toggle();
+	var configDiv = '<center><div class="button" id="kikimeter-config-toggle">Afficher/Masquer la configuration</div></center><div id="kikimeter-config-wrapper"><h1>Configuration</h1><div id="kikimeter-config" class="report"></div></div>';
+	$(configDiv).insertBefore("#report-actions");
+	var config = $('#kikimeter-config');
+	var configWrapper = $('#kikimeter-config-wrapper');
+	$('#kikimeter-config-toggle').click(function() {
+		configWrapper.toggle();
+	});
+	configWrapper.toggle();
 
-  // Configuration du tableau Résumé
+	// Configuration globale
+	var configModulesDiv = '<h2>Affichage des modules</h2><div id="kikimeter-config-modules"></div>';
+	config.append(configModulesDiv);
+
+	var configModules = $('#kikimeter-config-modules');
+	for (var key in leekikimeterModules) {
+		var checked = GM_getValue("kikimeter-display-" + key, 1);
+		configModules.append('<div><input type="checkbox" id="kikimeter-display-' + key + '" name="' + key + '"' + (checked == 1 ? 'checked' : '') + '/><label for="kikimeter-display-' + key + '">' + leekikimeterModules[key] + '</label></div>');
+	}
+	$('#kikimeter-config-modules input[type=checkbox]').change(function() {
+		var key = $(this).attr('name');
+		var value = $(this).is(':checked') ? 1 : 0;
+		GM_setValue("kikimeter-display-" + key, value);
+		$('#'+key).toggle();
+	});
+
+	// Configuration du tableau Résumé
 	var configTableDiv = '<h2>Colonnes du Résumé</h2><div id="kikimeter-config-table"></div>';
-  config.append(configTableDiv);
+	config.append(configTableDiv);
 
-  var configTable = $('#kikimeter-config-table');
-  for (var key in dispData) {
-    configTable.append('<div><input type="checkbox" id="kikimeter-' + key + '" name="' + key + '"' + (dispData[key]==1 ? 'checked' : '') + '/><label for="kikimeter-' + key + '">' + (leekData[key]||roundData[key]) + '</label></div>');   
-  }
+	var configTable = $('#kikimeter-config-table');
+	for (var key in dispData) {
+		configTable.append('<div><input type="checkbox" id="kikimeter-' + key + '" name="' + key + '"' + (dispData[key] == 1 ? 'checked' : '') + '/><label for="kikimeter-' + key + '">' + (leekData[key] || roundData[key]) + '</label></div>');
+	}
 
-  $('#kikimeter-config input[type=checkbox]').change(function(){
-  	var key = $(this).attr('name');
-  	var value = $(this).is(':checked') ? 1 : 0;
-  	dispData[key] = value;
-  	GM_setValue("kikimeter-" + key, value);
-  });
+	$('#kikimeter-config input[type=checkbox]').change(function() {
+		var key = $(this).attr('name');
+		var value = $(this).is(':checked') ? 1 : 0;
+		dispData[key] = value;
+		GM_setValue("kikimeter-" + key, value);
+	});
 
-  // Configuration de l'URL d'envoi des données
+	// Configuration de l'URL d'envoi des données
 	var configDataReceiverURLDiv = '<h2>URL d\'envoi des données (get.php)</h2><div id="kikimeter-config-dataReceiverURL"></div>';
-  config.append(configDataReceiverURLDiv);
-  var configDataReceiverURL = $('#kikimeter-config-dataReceiverURL');
-  configDataReceiverURL.append('<div><input type="text" value="' + dataReceiverURL + '" id="kikimeter-field-dataReceiverURL"/></div>');
-  var configDataReceiverURLField = $('#kikimeter-field-dataReceiverURL');
-  configDataReceiverURLField.change(function() {
-  	dataReceiverURL = $(this).val();
-  	GM_setValue("kikimeter-dataReceiverURL", dataReceiverURL);
-  });
+	config.append(configDataReceiverURLDiv);
+	var configDataReceiverURL = $('#kikimeter-config-dataReceiverURL');
+	configDataReceiverURL.append('<div><input type="text" value="' + dataReceiverURL + '" id="kikimeter-field-dataReceiverURL"/></div>');
+	var configDataReceiverURLField = $('#kikimeter-field-dataReceiverURL');
+	configDataReceiverURLField.change(function() {
+		dataReceiverURL = $(this).val();
+		GM_setValue("kikimeter-dataReceiverURL", dataReceiverURL);
+	});
 
-  // Application des CSS
+	// Application des règles CSS
 	config.css("margin-bottom", "50px");
 	config.find('h2').css("margin-top", "20px");
 	config.css("background", "none");
-  configTable.css('column-count', 4);
-  configTable.css('-moz-column-count', 4);
-  configTable.css('-webkit-column-count', 4);
-  configTable.css('column-gap', 25);
-  configTable.css('-moz-column-gap', 25);
-  configTable.css('-webkit-column-gap', 25);
-  configDataReceiverURLField.css("width", "500px");
+	configTable.css('column-count', 4);
+	configTable.css('-moz-column-count', 4);
+	configTable.css('-webkit-column-count', 4);
+	configTable.css('column-gap', 25);
+	configTable.css('-moz-column-gap', 25);
+	configTable.css('-webkit-column-gap', 25);
+	configDataReceiverURLField.css("width", "500px");
+}
+
+function initConfig() {
+	for (var key in leekikimeterModules) {
+		var display = GM_getValue("kikimeter-display-" + key, 1);
+		if (display == 0) {
+			$("#"+key).hide();
+		}
+	}
 }
 
 //	Permet de trier les tableaux html en appelant le script présenté ici : http://www.kryogenix.org/code/browser/sorttable
 function make_tables_sortable() {
-	var s = document.createElement('script');
-	s.src = 'http://kryogenix.org/code/browser/sorttable/sorttable.js';
-	s.onload = function() {
-		sorttable.init();
-		Array.prototype.slice.call(document.getElementsByTagName('table')).forEach(
-			function(t) {
-				sorttable.makeSortable(t);
-			}
-		)
-	};
-	document.getElementsByTagName('head')[0].appendChild(s);
+	sorttable.init();
+	Array.prototype.slice.call(document.getElementsByTagName('table')).forEach(
+		function(t) {
+			sorttable.makeSortable(t);
+		}
+	)
 }
 
 
@@ -1072,7 +1109,7 @@ function max(arr) {
 	}
 	return max;
 }
-	
+
 // minimum of an array
 function min(arr) {
 	var min = null;
@@ -1148,25 +1185,39 @@ function getXMLHttpRequest() {
 	return xhr;
 }
 
-var rawFightData;		// Objet stockant les données du combat récupérées depuis la page http://leekwars.com/fight_get
-var currentFight;		// Stock les données du combat
-var Highlights = {};	// Stock la liste des Hauts faits
-
+var rawFightData; // Objet stockant les données du combat récupérées depuis la page http://leekwars.com/fight_get
+var currentFight; // Stock les données du combat
+var Highlights = {}; // Stock la liste des Hauts faits
 
 // Récupère les données brutes du combat. Ce sont celles exploitées par l'animation de la page http://leekwars.com/report/xxxxxxx
 var urlTab = document.URL.split('/');
 var fight_id = parseInt(urlTab[urlTab.length - 1]);
-$.post(	'http://leekwars.com/fight_get',
-		'id=' + fight_id,
-		function(data){main(data);}	// Une fois les données récupérées, on exécute le programme principal
-);
+
+// Permet d'attendre que jQuery soit chargé avant d'exécuter le script
+function defer() {
+	if (window.$) {
+		$.post(
+			'http://leekwars.com/fight_get',
+			'id=' + fight_id,
+			function(data) { // Une fois les données récupérées, on exécute le programme principal
+				main(data);
+			}
+		);
+	} else {
+		setTimeout(function() {
+			defer();
+		}, 50);
+	}
+}
+
+defer();
 
 // Fonction principale appelant les différents objets et fonctions d'affichage une fois les données brutes du combat chargées
 function main(data) {
 
 	rawFightData = JSON.parse(data);
 	currentFight = new Fight();
-	
+
 	// LECTURE DES TABLEAUX
 	readTables();
 
@@ -1177,7 +1228,7 @@ function main(data) {
 
 	// CREATION DU RESUME
 	displayKikimeter();
-	
+
 	// CREATION DU GRAPHE DES PV
 	displayLineChartLeeksPV();
 
@@ -1186,19 +1237,22 @@ function main(data) {
 
 	// AFFICHAGE DES HAUTS FAITS (HIGHLIGHTS)
 	displayHighlights();
-    
-  // AFFICHE LES OPTIONS DE CONFIGURATION
-  displayConfig();
+
+	// AFFICHE LES OPTIONS DE CONFIGURATION
+	displayConfig();
+
+	// APPLIQUE LA CONFIGURATION EXISTANTE
+	initConfig();
 
 	// MISE EN COULEUR DU NOM DES POIREAUX DANS LE RAPPORT GÉNÉRAL
 	colorize_report_general();
 
 	// PERMET DE TRIER LES TABLEAUX EN CLIQUANT SUR L'ENTÊTE
 	make_tables_sortable();
-	
+
 	// ENVOI DES DONNÉES SUR UNE PAGE DISTANTE
 	if (dataReceiverURL != '') {
-		
+
 		var serverFightData = [
 			'fightId',
 			'draw',
