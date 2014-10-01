@@ -17,7 +17,7 @@ var dataReceiverURL = ''; // http://<TRUC>/get.php
 
 var cookieDataReceiverURL = GM_getValue("kikimeter-dataReceiverURL", "");
 if (cookieDataReceiverURL != "" && (cookieDataReceiverURL == dataReceiverURL || dataReceiverURL == "")) {
-	dispData[key] = value;
+	dataReceiverURL = cookieDataReceiverURL;
 }
 else {
 	GM_setValue("kikimeter-dataReceiverURL", dataReceiverURL);
@@ -1253,7 +1253,7 @@ function main(data) {
 			url: dataReceiverURL,
 			dataType: 'json',
 			data: json,
-			success: function(succss) {
+			success: function(data) {
 				console.log(json);
 			}
 		});
