@@ -1093,7 +1093,7 @@ function initConfig() {
 //	Permet de trier les tableaux html en appelant le script présenté ici : http://www.kryogenix.org/code/browser/sorttable
 function make_tables_sortable() {
 	sorttable.init();
-	Array.prototype.slice.call(document.getElementsByTagName('table')).forEach(
+	Array.prototype.slice.call(document.getElementById('page').getElementsByTagName('table')).forEach(
 		function(t) {
 			sorttable.makeSortable(t);
 		}
