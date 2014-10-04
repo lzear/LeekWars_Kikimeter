@@ -1,17 +1,17 @@
 // ==UserScript==
-// @name          	LeekWars : LeeKikiMeter
-// @version					0.03
-// @description  		Ce script affiche un résumé des combats de leekwars
-// @match      			http://leekwars.com/report/*
-// @author					Elzéar, yLark, Foudge, AlexClaw
-// @grant   				GM_getValue
-// @grant   				GM_setValue
+// @name				LeekWars : LeeKikiMeter
+// @version				0.03
+// @description			Ce script affiche un résumé des combats de leekwars
+// @match				http://leekwars.com/report/*
+// @author				Elzéar, yLark, Foudge, AlexClaw
+// @grant				GM_getValue
+// @grant				GM_setValue
 // @projectPage			https://github.com/Zear06/LeekWars_Kikimeter
 // @downloadURL			https://github.com/Zear06/LeekWars_Kikimeter/raw/master/kikimeter.user.js
-// @updateURL				https://github.com/Zear06/LeekWars_Kikimeter/raw/master/kikimeter.user.js
-// @require					https://code.jquery.com/jquery-2.1.1.min.js
-// @require					https://raw.githubusercontent.com/nnnick/Chart.js/master/Chart.js
-// @require					http://kryogenix.org/code/browser/sorttable/sorttable.js
+// @updateURL			https://github.com/Zear06/LeekWars_Kikimeter/raw/master/kikimeter.user.js
+// @require				https://code.jquery.com/jquery-2.1.1.min.js
+// @require				https://raw.githubusercontent.com/nnnick/Chart.js/master/Chart.js
+// @require				http://kryogenix.org/code/browser/sorttable/sorttable.js
 // ==/UserScript==
 
 // URL DE LA PAGE PHP QUI RÉCEPTIONNE LES DONNÉES
@@ -430,7 +430,7 @@ function readActions() {
 			currentFight.leeks[RegExp.$1].addToRoundData(round, 'actionsWeapon', 1);
 			lastPTaction = 'Échec';
 		}
-		if (/^([^\s]+) lance [^\s]+... Échec !$/.test(actions[i].textContent)) {
+		if (/^([^\s]+) lance (.+)... Échec !$/.test(actions[i].textContent)) {
 			currentFight.leeks[RegExp.$1].addToRoundData(round, 'fails', 1);
 			currentFight.leeks[RegExp.$1].addToRoundData(round, 'actionsChip', 1);
 			lastPTaction = 'Échec';
