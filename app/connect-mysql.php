@@ -42,7 +42,7 @@ $sqlCreate = "CREATE TABLE IF NOT EXISTS `leekwars_data` (
   `timestamp` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`fightId`,`leekId`),
   KEY `id` (`id`)
-) ENGINE=MyISAM  DEFAULT CHARSET=latin1 AUTO_INCREMENT=1;";
+) ENGINE=MyISAM DEFAULT CHARSET=latin1 AUTO_INCREMENT=1;";
 
 try {
   $queryCreate = $bdd->prepare($sqlCreate);
