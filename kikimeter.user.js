@@ -924,6 +924,7 @@ function createLineChart() {
 				leekPV[i] = totalLife + diffPV;
 			else
 				leekPV[i] = leekPV[i - 1] + diffPV;
+			if((i+1) == currentFight.nbRounds)currentFight.leeks[leek].writeData("lastLife", leekPV[i]);
 			if (leekPV[i] == 0) break; // Le poireau est mort, on ne continue pas à tracer sa vie
 		}
 		var color = currentFight.leeks[leek].color;
@@ -1264,7 +1265,10 @@ function main(data) {
 			'leekId',
 			'name',
 			'team',
+			'teamName',
+			'farmer',
 			'alive',
+			'lastLife',
 			'level',
 			'XP',
 			'gainXP',
