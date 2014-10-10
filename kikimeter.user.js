@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name				LeekWars : LeeKikiMeter
-// @version				0.03
+// @version				0.031
 // @description			Ce script affiche un résumé des combats de leekwars
 // @match				http://leekwars.com/report/*
 // @author				Elzéar, yLark, Foudge, AlexClaw
@@ -438,7 +438,7 @@ function readActions() {
 
 		// MORT
 		if (/^([^\s]+) est mort !/.test(actions[i].textContent)) {
-			currentFight.leeks[attacker].addToRoundData(round, 'lastHits', 1);
+			if (attacker != null) currentFight.leeks[attacker].addToRoundData(round, 'lastHits', 1);
 		}
 
 		// BLABLA
