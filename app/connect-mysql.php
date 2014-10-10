@@ -14,7 +14,9 @@ $sqlCreate = "CREATE TABLE IF NOT EXISTS `leekwars_data` (
   `draw` int(11) DEFAULT NULL,
   `nbRounds` int(11) DEFAULT NULL,
   `team` int(11) DEFAULT NULL,
-  `leekId` int(11) DEFAULT NULL,
+  `teamName` varchar(255) NOT NULL,
+  `farmer` int(11) NOT NULL,
+  `leekId` int(11) NOT NULL DEFAULT '0',
   `name` varchar(255) DEFAULT NULL,
   `level` int(11) DEFAULT NULL,
   `XP` int(11) DEFAULT NULL,
@@ -22,6 +24,7 @@ $sqlCreate = "CREATE TABLE IF NOT EXISTS `leekwars_data` (
   `gainTalent` int(11) DEFAULT NULL,
   `gainHabs` int(11) DEFAULT NULL,
   `alive` int(11) DEFAULT NULL,
+  `lastLife` int(11) NOT NULL,
   `roundsPlayed` int(11) DEFAULT NULL,
   `equipWeapon` int(11) DEFAULT NULL,
   `actionsWeapon` int(11) DEFAULT NULL,
@@ -36,10 +39,10 @@ $sqlCreate = "CREATE TABLE IF NOT EXISTS `leekwars_data` (
   `lastHits` int(11) DEFAULT NULL,
   `blabla` int(11) DEFAULT NULL,
   `crashes` int(11) DEFAULT NULL,
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `ukey` (`fightId`, `leekId`, `team`),
+  `timestamp` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`fightId`,`leekId`),
   KEY `id` (`id`)
-) ENGINE=MyISAM DEFAULT CHARSET=latin1 AUTO_INCREMENT=1 ;";
+) ENGINE=MyISAM  DEFAULT CHARSET=latin1 AUTO_INCREMENT=1;";
 
 try {
   $queryCreate = $bdd->prepare($sqlCreate);
