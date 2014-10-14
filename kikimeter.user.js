@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name				LeekWars : LeeKikiMeter
-// @version				0.03b
-// @description			Ce script affiche un résumé des combats de leekwars
+// @version				0.04
+// @description			Ce script affiche un résumé des combats de leekwars, des graphes et tableaux d'analyse
 // @match				http://leekwars.com/report/*
 // @author				Elzéar, yLark, Foudge, AlexClaw
 // @grant				GM_getValue
@@ -10,8 +10,10 @@
 // @downloadURL			https://github.com/Zear06/LeekWars_Kikimeter/raw/master/kikimeter.user.js
 // @updateURL			https://github.com/Zear06/LeekWars_Kikimeter/raw/master/kikimeter.user.js
 // @require				https://code.jquery.com/jquery-2.1.1.min.js
-// @require				https://raw.githubusercontent.com/nnnick/Chart.js/master/Chart.js
 // @require				http://kryogenix.org/code/browser/sorttable/sorttable.js
+// @require				https://raw.githubusercontent.com/mbostock/d3/master/d3.min.js
+// @require				https://raw.githubusercontent.com/shutterstock/rickshaw/master/vendor/d3.layout.min.js
+// @require				https://raw.githubusercontent.com/shutterstock/rickshaw/master/rickshaw.min.js
 // ==/UserScript==
 
 // URL DE LA PAGE PHP QUI RÉCEPTIONNE LES DONNÉES
@@ -78,7 +80,7 @@ for (var key in dispData) {
 var leekikimeterModules = {
 	'report-general' : 'Rapport de combat',
 	'report-resume' : 'Résumé',
-	'report-chart' : 'Évolution des PV',
+	'main_chart_container' : 'Courbes',
 	'report-PTusageTable' : 'Utilisation des PT',
 	'report-highlights' : 'Hauts faits',
 	'report-actions' : 'Actions'
@@ -131,13 +133,17 @@ var allData = $.extend({}, leekData, roundData);
 function Fight() {
 	var urlTab = document.URL.split('/');
 	this.fightId = parseInt(urlTab[urlTab.length - 1]);
-	this.teamFight = (document.getElementById('report-general').getElementsByClassName('report').length > 2) ? 1 : 0; // vaut 1 s'il s'agit d'un combat d'équipe
+	this.teamFight = (document.getElementById('report-general').getElementsByClassName('report').length > 2) ? true : false; // vaut true s'il s'agit d'un combat d'équipe
 	this.draw = (document.getElementsByTagName('h3')[0].textContent == 'Équipe 1') ? 1 : 0; // vaut 1 si le combat s'achève par un match nul
 	this.bonus = (document.getElementsByClassName('bonus').length > 0) ? parseInt(document.getElementsByClassName('bonus')[0].textContent.replace(/[^\d.]/g, '')) : 1; // multiplicateur d'XP (par défaut : 1)
 	this.nbRounds = parseInt(document.getElementById('duration').textContent.replace(/[^\d.]/g, ''));
 	this.nbLeeks = 0;
 	this.leeks = {};
-	this.teams = [new Team(), new Team()];
+	
+	if(this.teamFight)
+		this.teams = [];
+	else
+		this.teams = [new Team(), new Team()];
 
 	this.addLeek = function(team, tr) {
 		var name = tr.getElementsByClassName('name')[0].textContent;
@@ -249,6 +255,7 @@ function Leek(name, team, tr) {
 	this.appearence = rawFightData.leeks[this.rawFightDataId].appearence;
 	this.cellPos = rawFightData.leeks[this.rawFightDataId].cellPos; // Position du poireau en début de combat
 	this.farmer = rawFightData.leeks[this.rawFightDataId].farmer; // Éleveur du poireau
+	//this.farmerName = ; // Requête ajax needed
 	this.force = rawFightData.leeks[this.rawFightDataId].force;
 	this.frequency = rawFightData.leeks[this.rawFightDataId].frequency;
 	this.id = rawFightData.leeks[this.rawFightDataId].id; // Numéro unique du poireau dans le cadre du combat
@@ -306,11 +313,11 @@ function Leek(name, team, tr) {
 }
 
 // OBJET TEAM
-function Team() {
+function Team(tr) {
 	this.nbLeeks = 0;
-	this.leeks = new Array();
+	this.leeks = [];
 
-	this.getTeamData = function(tr) {
+	if(tr != null) {
 		var linkTab = tr.getElementsByTagName('a')[0].href.split('/');
 		this.teamId = parseInt(linkTab[linkTab.length - 1]); // Numéro de la team dans le jeu
 
@@ -319,9 +326,10 @@ function Team() {
 		this.XP = parseInt(document.getElementById('tt_' + tr.getElementsByClassName('xp')[0].children[0].id).textContent.split('/')[0].replace(/[^\d.]/g, ''));
 		this.gainXP = parseInt(tr.getElementsByClassName('xp')[0].children[1].textContent.replace(/[^\d.]/g, ''));
 	}
+	
 	this.addLeek = function(name) {
 		this.leeks.push(name);
-		this.nbLeeks++;
+		this.nbLeeks = count(this.leeks);
 	}
 }
 
@@ -904,113 +912,605 @@ function colorize_report_general() {
 	}
 }
 
-// Utilisation de Chart.js pour dessiner le graphique : http://www.chartjs.org/docs/#line-chart
-function createLineChart() {
-
-	var roundLabels = [];
-	for (var i = 0; i < currentFight.nbRounds; i++) {
-		roundLabels[i] = "Tour " + (i + 1);
-	}
-
-	var myDatasets = [];
-	for (var leek in currentFight.leeks) {
+// Génération des données pour le graph Rickshaw
+function getGraphSeries() {
+	
+	var palette = new Rickshaw.Color.Palette({ scheme: 'munin' });		// Palette de couleur automatique
+	var series = [];
+	
+	for (var leek in currentFight.leeks) {	// Boucle sur les tours pour recalculer l'évolution de la vie des poireaux
 		var totalLife = currentFight.leeks[leek].life;
-		var leekPV = [];
-		for (var i = 0; i < currentFight.nbRounds; i++) {
-			var dmg_in = currentFight.leeks[leek].getRoundData(i + 1, 'dmg_in');
-			var heal_in = currentFight.leeks[leek].getRoundData(i + 1, 'heal_in');
+		var data = [];
+		for (var i = 1; i <= currentFight.nbRounds; i++) {
+			var dmg_in = currentFight.leeks[leek].getRoundData(i, 'dmg_in');
+			var heal_in = currentFight.leeks[leek].getRoundData(i, 'heal_in');
 			var diffPV = ((heal_in != null) ? heal_in : 0) - ((dmg_in != null) ? dmg_in : 0);
-			if (i == 0)
-				leekPV[i] = totalLife + diffPV;
+			if (i === 1)
+				data[i-1] = {'x': i, 'y': totalLife + diffPV};
 			else
-				leekPV[i] = leekPV[i - 1] + diffPV;
-			if (leekPV[i] == 0) break; // Le poireau est mort, on ne continue pas à tracer sa vie
+				data[i-1] = {'x': i, 'y': data[i - 2].y + diffPV};
+			if (data[i-1].y === 0) break; // Le poireau est mort, on ne continue pas à tracer sa vie
 		}
-		var color = currentFight.leeks[leek].color;
 		var dataset = {
-			label: currentFight.leeks[leek].name,
-			fillColor: color.replace(')', ', 0.1)').replace('rgb', 'rgba'),
-			strokeColor: color,
-			pointColor: color,
-			pointStrokeColor: "#fff",
-			pointHighlightFill: "#fff",
-			pointHighlightStroke: color,
-			data: leekPV
+			name: 'PV - ' + currentFight.leeks[leek].name,
+			color: ( currentFight.nbLeeks <=2 ) ? currentFight.leeks[leek].color : palette.color(),	// Si on n'a que deux poireaux, on trace des graph des couleurs des poireaux, sinon on garde la couleur auto
+			data: data
 		};
-		myDatasets.push(dataset);
+		series.push(dataset);
 	}
-
-	/*// Balance des PV en %, ne fonctionne qu'en solo
-	var balancePV = [];
-	for (var i=0; i<currentFight.nbRounds; i++) {
-		balancePV[i] = myDatasets[0].data[i] / max(myDatasets[0].data) *100 - myDatasets[1].data[i]  / max(myDatasets[1].data) *100;
+	
+	// Calcul de l'Équilibre de vie entre l'équipe 1 et 2 et de la vie totale des équipes 1 et 2
+	var data = [];
+	var dataTeam0 = [];
+	var dataTeam1 = [];
+	var teamName = [];
+	var teams = [{'TotalLife': 0, 'life': []},
+				 {'TotalLife': 0, 'life': []}];
+	
+	if(currentFight.nbLeeks > 2) {	// Si on est en match équipe, on récupère le nom des équipes
+		teamName[0] = currentFight.teams[0].name;
+		teamName[1] = currentFight.teams[1].name;
+		if(teamName[0] == undefined) teamName[0] = 'Éleveur 1';		//Remplacer par le vrai nom de l'éleveur (requête ajax needed sur currentFight.leeks[].farmer)
+		if(teamName[1] == undefined) teamName[1] = 'Éleveur 2';		//Remplacer par le vrai nom de l'éleveur (requête ajax needed sur currentFight.leeks[].farmer)
+	} else { // Si on est en match solo, chaque nom d'équipe est le nom du poireau
+		for(var leek in currentFight.leeks){
+			teamName.push(currentFight.leeks[leek].name);
+		}
 	}
-	dataset = {
-			label : 'Balance des PV en %',
-			fillColor : 'rgba(0, 0, 0, 0)',
-			strokeColor : 'rgb(0, 0, 0)',
-			pointColor : 'rgb(0, 0, 0)',
-			pointStrokeColor : "#fff",
-			pointHighlightFill : "#fff",
-			pointHighlightStroke : 'rgb(0, 0, 0)',
-			data : balancePV
+	
+	for (var i = 1; i <= currentFight.nbRounds; i++) {	// Boucle sur les tours pour recalculer l'évolution de la vie des équipes
+	
+		if(teams[0].life[i-1] == undefined) teams[0].life[i-1] = (i == 1) ? 0 : teams[0].life[i - 2];
+		if(teams[1].life[i-1] == undefined) teams[1].life[i-1] = (i == 1) ? 0 : teams[1].life[i - 2];
+			
+		for (var leek in currentFight.leeks) {
+			var team = currentFight.leeks[leek].team;
+			
+			if(i == 1)
+				teams[team].TotalLife += currentFight.leeks[leek].life;
+			
+			var dmg_in = currentFight.leeks[leek].getRoundData(i, 'dmg_in');
+			var heal_in = currentFight.leeks[leek].getRoundData(i, 'heal_in');
+			var diffPV = ((heal_in != null) ? heal_in : 0) - ((dmg_in != null) ? dmg_in : 0);
+			teams[team].life[i-1] += diffPV;
+		}
+		
+		data[i-1] = {'x': i, 'y': ((teams[1].TotalLife - teams[1].life[i-1]) / teams[1].TotalLife - (teams[0].TotalLife - teams[0].life[i-1]) / teams[0].TotalLife)*100};
+		dataTeam0[i-1] = {'x': i, 'y': (teams[0].TotalLife + teams[0].life[i-1])};
+		dataTeam1[i-1] = {'x': i, 'y': (teams[1].TotalLife + teams[1].life[i-1])};
+	}
+	
+	if( currentFight.nbLeeks > 2 ){		// N'envoie les données de vie des équipes 1 et 2 seulement si on n'est pas en combat solo
+		var dataset = {
+			name: 'PV - ' + teamName[0],
+			color: palette.color(),
+			data: dataTeam0
+		};
+		series.push(dataset);
+		
+		var dataset = {
+			name: 'PV - ' + teamName[1],
+			color: palette.color(),
+			data: dataTeam1
+		};
+		series.push(dataset);
+	}
+	
+	var dataset = {
+		name: 'Équilibre ' + teamName[0] + ' - ' + teamName[1] + ' (% PV)',
+		color: palette.color(),
+		data: data
 	};
-	myDatasets.push(dataset);*/
-
-	// Calcul d'une échelle de l'axe Y correcte
-	var scaleYMax = 0;
-	for (var i in myDatasets) {
-		if (max(myDatasets[i].data) > scaleYMax)
-			scaleYMax = max(myDatasets[i].data);
-	}
-	var multiplier = Math.pow(10, scaleYMax.toString().length - 2);
-	scaleYMax = Math.ceil(scaleYMax / multiplier) * multiplier;
-
-	var canvas = document.getElementById("canvas_chart");
-	var ctx = canvas.getContext("2d");
-	var chart = new Chart(ctx);
-	var lineChartData = {
-		labels: roundLabels,
-		datasets: myDatasets
-	};
-	window.myLine = chart.Line(lineChartData, {
-		responsive: false,
-		animation: false,
-		bezierCurve: false,
-		scaleGridLineColor: "rgba(0,0,0,.04)",
-		pointDotRadius: 2.5,
-		pointHitDetectionRadius: Math.floor(24 - (currentFight.nbRounds * 0.3)), // plus il y a de tours, plus la zone de détection est petite
-		datasetStrokeWidth: 1.2,
-		scaleOverride: true,
-		scaleStepWidth: Math.ceil(scaleYMax / 100) * 10,
-		scaleSteps: 10,
-		scaleStartValue: 0
-	});
+	series.push(dataset);
+	
+	return series;
 }
 
-// Affiche le graphe d'évolution des points de chaque poireau
-function displayLineChartLeeksPV() {
+// Affiche le graph dans la page
+function displayChart() {
+	
+	// Création des objets DOM qui vont supporter le graph
+	
+	var html_content = '<h1>Courbes</h1>';
+	html_content += '<div id="chart_container">';
+	html_content += '	<div id="chart" class="rickshaw_graph"></div>';
+	//html_content += '	<div id="timeline" class="rickshaw_annotation_timeline"></div>'; // à terminer d'implémenter plus tard
+	html_content += '</div>';
+	
+	html_content += '<div id="chart_footer">';
+	html_content += '	<div id="legend"></div>';
+	//html_content += '	<form id="offset_form" class="toggler">';
+	//html_content += '		<input type="radio" name="offset" id="line" value="line" style="display:none;" checked>';
+	//html_content += '		<label for="line" style="cursor:pointer;"><img title="Ligne" alt="Ligne" src="https://raw.githubusercontent.com/shutterstock/rickshaw/master/examples/images/om_lines.png"></label>';
+	
+	//html_content += '		<input type="radio" name="offset" id="stack" value="stack" style="display:none" >';
+	//html_content += '		<label for="stack" style="cursor:pointer;"><img title="Empilé" alt="Empilé" src="https://raw.githubusercontent.com/shutterstock/rickshaw/master/examples/images/om_stack.png"></label>';
+	
+	//html_content += '		<input type="radio" name="offset" id="pct" value="pct" style="display:none" >';
+	//html_content += '		<label for="pct" style="cursor:pointer;"><img title="Pourcentage" alt="Pourcentage" src="https://raw.githubusercontent.com/shutterstock/rickshaw/master/examples/images/om_percent.png"></label>';
+	//html_content += '	</form>';
+	html_content += '</div>';
+	
 	var chart = document.createElement('div');
-	chart.id = 'report-chart';
-	// Création du titre
-	var h1 = document.createElement('h1');
-	h1.appendChild(document.createTextNode('Évolution des PV'));
-	chart.appendChild(h1);
-	// Création du graphique
-	var line_chart = document.createElement('canvas');
-	line_chart.id = 'canvas_chart';
-	line_chart.width = "900";
-	line_chart.height = "450";
-	line_chart.style.marginLeft = '35px';
-	chart.appendChild(line_chart);
-
+	chart.id = 'main_chart_container';
+	chart.innerHTML = html_content;
+	
+	var style = document.createElement('style');
+	style.innerHTML = getRickshawStyle();
+	
 	// Insertion dans le DOM
 	var page = document.getElementById('page');
 	var report_actions = document.getElementById('report-actions');
+	page.insertBefore(style, report_actions);
 	page.insertBefore(chart, report_actions);
+	
+	
+	// Paramètage du graph rickshaw
 
-	// Génération du graphique
-	createLineChart();
+	var graph = new Rickshaw.Graph( {
+		element: document.querySelector("#chart"),
+		width: 930,
+		height: 450,
+		min: 'auto',		// minimum automatique, permet d'afficher des courbes en-dessous de zéro.
+		renderer: 'area',	// alternative : 'line'
+		stack: false,		// Est-ce qu'on empile les courbes ? Nécessite que les séries aient les mêmes dimensions
+		stroke: true,
+		interpolation: 'monotone',	// alternative : 'line'
+		series: getGraphSeries()	// Récupère les séries à tracer
+	} );
+
+	var xAxis = new Rickshaw.Graph.Axis.X( {	// Créé l'axe X
+		graph: graph
+	} );
+
+	var yAxis = new Rickshaw.Graph.Axis.Y( {	// Créé l'axe Y
+		graph: graph
+	} );
+
+	var legend = new Rickshaw.Graph.Legend( {		// Affiche la légence
+		element: document.querySelector('#legend'),
+		graph: graph
+	} );
+
+	var shelving = new Rickshaw.Graph.Behavior.Series.Toggle( {		// Permet de cocher/décocher des séries dans la légende
+		graph: graph,
+		legend: legend
+	} );
+
+	var highlighter = new Rickshaw.Graph.Behavior.Series.Highlight( {	// Mise en surbrillance des lignes au survol de la légende
+		graph: graph,
+		legend: legend
+	} );
+
+	var hoverDetail = new Rickshaw.Graph.HoverDetail( {		// Étiquettes affichée au survol
+		graph: graph,
+		xFormatter: function(x) { return "Tour " + x },
+		yFormatter: function(y) { return Math.round(y*10)/10}
+	} );
+
+	/*var annotator = new Rickshaw.Graph.Annotate({		// Annotations d'évênements. Développement à poursuivre plus tard
+		graph: graph,
+		element: document.getElementById('timeline')
+	});
+
+	annotator.add(2, "Test Blabla");
+	annotator.add(3.2, "<img src='http://static.leekwars.com/image/chip/lightning.png' width='30px'>");
+	annotator.update();*/
+
+
+	/*var offsetForm = document.getElementById('offset_form');
+	offsetForm.addEventListener('change', function(e) {
+		var offsetMode = e.target.value;
+
+		if (offsetMode == 'line') {
+			graph.setRenderer('line');
+		}
+		if (offsetMode == 'stack') {
+			graph.setRenderer('stack');
+		}
+		if (offsetMode == 'pct') {
+			graph.setRenderer('pct');
+		}
+		graph.update();
+	}, false);*/
+
+	graph.render();
+}
+
+// Feuille CSS pour les graph Rickshaw
+function getRickshawStyle() {
+
+	// Ajout des styles css. Je n'ai pas trouvé plus propre pour les ajouter au document...
+	// Un lien vers un fichier CSS sur Github ne fonctionne pas à cause du type MIME renvoyé qui n'est pas bon
+	
+	var style_content = '/*';
+	style_content += 'CSS originaire de : https://github.com/shutterstock/rickshaw/blob/master/rickshaw.css';
+	style_content += 'Légèrement modifié au niveau des légendes intéractives et des .area';
+	style_content += '*/';
+
+	style_content += '.rickshaw_graph .detail {';
+	style_content += '        pointer-events: none;';
+	style_content += '        position: absolute;';
+	style_content += '        top: 0;';
+	style_content += '        z-index: 2;';
+	style_content += '        background: rgba(0, 0, 0, 0.1);';
+	style_content += '        bottom: 0;';
+	style_content += '        width: 1px;';
+	style_content += '        transition: opacity 0.25s linear;';
+	style_content += '        -moz-transition: opacity 0.25s linear;';
+	style_content += '        -o-transition: opacity 0.25s linear;';
+	style_content += '        -webkit-transition: opacity 0.25s linear;';
+	style_content += '}';
+	style_content += '.rickshaw_graph .detail.inactive {';
+	style_content += '        display: none;';
+	style_content += '}';
+	style_content += '.rickshaw_graph .detail .item.active {';
+	style_content += '        opacity: 1;';
+	style_content += '}';
+	style_content += '.rickshaw_graph .detail .x_label {';
+	//style_content += '        font-family: Arial, sans-serif;';
+	style_content += '        border-radius: 3px;';
+	style_content += '        padding: 6px;';
+	style_content += '        opacity: 0.5;';
+	style_content += '        border: 1px solid #e0e0e0;';
+	style_content += '        font-size: 12px;';
+	style_content += '        position: absolute;';
+	style_content += '        background: white;';
+	style_content += '        white-space: nowrap;';
+	style_content += '}';
+	style_content += '.rickshaw_graph .detail .x_label.left {';
+	style_content += '        left: 0;';
+	style_content += '}';
+	style_content += '.rickshaw_graph .detail .x_label.right {';
+	style_content += '        right: 0;';
+	style_content += '}';
+	style_content += '.rickshaw_graph .detail .item {';
+	style_content += '        position: absolute;';
+	style_content += '        z-index: 2;';
+	style_content += '        border-radius: 3px;';
+	style_content += '        padding: 0.25em;';
+	style_content += '        font-size: 12px;';
+	//style_content += '        font-family: Arial, sans-serif;';
+	style_content += '        opacity: 0;';
+	style_content += '        background: rgba(0, 0, 0, 0.4);';
+	style_content += '        color: white;';
+	style_content += '        border: 1px solid rgba(0, 0, 0, 0.4);';
+	style_content += '        margin-left: 1em;';
+	style_content += '        margin-right: 1em;';
+	style_content += '        margin-top: -1em;';
+	style_content += '        white-space: nowrap;';
+	style_content += '}';
+	style_content += '.rickshaw_graph .detail .item.left {';
+	style_content += '        left: 0;';
+	style_content += '}';
+	style_content += '.rickshaw_graph .detail .item.right {';
+	style_content += '        right: 0;';
+	style_content += '}';
+	style_content += '.rickshaw_graph .detail .item.active {';
+	style_content += '        opacity: 1;';
+	style_content += '        background: rgba(0, 0, 0, 0.8);';
+	style_content += '}';
+	style_content += '.rickshaw_graph .detail .item:after {';
+	style_content += '        position: absolute;';
+	style_content += '        display: block;';
+	style_content += '        width: 0;';
+	style_content += '        height: 0;';
+	style_content += '        content: "";';
+	style_content += '        border: 5px solid transparent;';
+	style_content += '}';
+	style_content += '.rickshaw_graph .detail .item.left:after {';
+	style_content += '        top: 1em;';
+	style_content += '        left: -5px;';
+	style_content += '        margin-top: -5px;';
+	style_content += '        border-right-color: rgba(0, 0, 0, 0.8);';
+	style_content += '        border-left-width: 0;';
+	style_content += '}';
+	style_content += '.rickshaw_graph .detail .item.right:after {';
+	style_content += '        top: 1em;';
+	style_content += '        right: -5px;';
+	style_content += '        margin-top: -5px;';
+	style_content += '        border-left-color: rgba(0, 0, 0, 0.8);';
+	style_content += '        border-right-width: 0;';
+	style_content += '}';
+	style_content += '.rickshaw_graph .detail .dot {';
+	style_content += '        width: 4px;';
+	style_content += '        height: 4px;';
+	style_content += '        margin-left: -3px;';
+	style_content += '        margin-top: -3.5px;';
+	style_content += '        border-radius: 5px;';
+	style_content += '        position: absolute;';
+	style_content += '        box-shadow: 0 0 2px rgba(0, 0, 0, 0.6);';
+	style_content += '        box-sizing: content-box;';
+	style_content += '        -moz-box-sizing: content-box;';
+	style_content += '        background: white;';
+	style_content += '        border-width: 2px;';
+	style_content += '        border-style: solid;';
+	style_content += '        display: none;';
+	style_content += '        background-clip: padding-box;';
+	style_content += '}';
+	style_content += '.rickshaw_graph .detail .dot.active {';
+	style_content += '        display: block;';
+	style_content += '}';
+	
+	style_content += '/* graph */';
+	style_content += '.rickshaw_graph {';
+	style_content += '        position: relative;';
+	style_content += '}';
+	style_content += '.rickshaw_graph svg {';
+	style_content += '        display: block; ';
+	style_content += '        overflow: hidden;';
+	style_content += '}';
+	style_content += '.rickshaw_graph .area {';
+	style_content += '        opacity: 0.1; ';
+	style_content += '}';
+	
+	style_content += '/* ticks */';
+	style_content += '.rickshaw_graph .x_tick {';
+	style_content += '        position: absolute;';
+	style_content += '        top: 0;';
+	style_content += '        bottom: 0;';
+	style_content += '        width: 0px;';
+	style_content += '        border-left: 1px dotted rgba(0, 0, 0, 0.2);';
+	style_content += '        pointer-events: none;';
+	style_content += '}';
+	style_content += '.rickshaw_graph .x_tick .title {';
+	style_content += '        position: absolute;';
+	style_content += '        font-size: 12px;';
+	//style_content += '        font-family: Arial, sans-serif;';
+	style_content += '        opacity: 0.5;';
+	style_content += '        white-space: nowrap;';
+	style_content += '        margin-left: 3px;';
+	style_content += '        bottom: 1px;';
+	style_content += '}';
+
+	style_content += '/* annotations */';
+	style_content += '.rickshaw_annotation_timeline {';
+	style_content += '        height: 1px;';
+	style_content += '        border-top: 1px solid #e0e0e0;';
+	style_content += '        margin-top: 10px;';
+	style_content += '        position: relative;';
+	style_content += '}';
+	style_content += '.rickshaw_annotation_timeline .annotation {';
+	style_content += '        position: absolute;';
+	style_content += '        height: 6px;';
+	style_content += '        width: 6px;';
+	style_content += '        margin-left: -2px;';
+	style_content += '        top: -3px;';
+	style_content += '        border-radius: 5px;';
+	style_content += '        background-color: rgba(0, 0, 0, 0.25);';
+	style_content += '}';
+	style_content += '.rickshaw_graph .annotation_line {';
+	style_content += '        position: absolute;';
+	style_content += '        top: 0;';
+	style_content += '        bottom: -6px;';
+	style_content += '        width: 0px;';
+	style_content += '        border-left: 2px solid rgba(0, 0, 0, 0.3);';
+	style_content += '        display: none;';
+	style_content += '}';
+	style_content += '.rickshaw_graph .annotation_line.active {';
+	style_content += '        display: block;';
+	style_content += '}';
+
+	style_content += '.rickshaw_graph .annotation_range {';
+	style_content += '        background: rgba(0, 0, 0, 0.1);';
+	style_content += '        display: none;';
+	style_content += '        position: absolute;';
+	style_content += '        top: 0;';
+	style_content += '        bottom: -6px;';
+	style_content += '}';
+	style_content += '.rickshaw_graph .annotation_range.active {';
+	style_content += '        display: block;';
+	style_content += '}';
+	style_content += '.rickshaw_graph .annotation_range.active.offscreen {';
+	style_content += '        display: none;';
+	style_content += '}';
+
+	style_content += '.rickshaw_annotation_timeline .annotation .content {';
+	style_content += '        background: white;';
+	style_content += '        color: black;';
+	style_content += '        opacity: 0.9;';
+	style_content += '        padding: 5px 5px;';
+	style_content += '        box-shadow: 0 0 2px rgba(0, 0, 0, 0.8);';
+	style_content += '        border-radius: 3px;';
+	style_content += '        position: relative;';
+	style_content += '        z-index: 20;';
+	style_content += '        font-size: 12px;';
+	style_content += '        padding: 6px 8px 8px;';
+	style_content += '        top: 18px;';
+	style_content += '        left: -11px;';
+	style_content += '        width: 160px;';
+	style_content += '        display: none;';
+	style_content += '        cursor: pointer;';
+	style_content += '}';
+	style_content += '.rickshaw_annotation_timeline .annotation .content:before {';
+	style_content += '        content: "\25b2";';
+	style_content += '        position: absolute;';
+	style_content += '        top: -11px;';
+	style_content += '        color: white;';
+	style_content += '        text-shadow: 0 -1px 1px rgba(0, 0, 0, 0.8);';
+	style_content += '}';
+	style_content += '.rickshaw_annotation_timeline .annotation.active,';
+	style_content += '.rickshaw_annotation_timeline .annotation:hover {';
+	style_content += '        background-color: rgba(0, 0, 0, 0.8);';
+	style_content += '        cursor: none;';
+	style_content += '}';
+	style_content += '.rickshaw_annotation_timeline .annotation .content:hover {';
+	style_content += '        z-index: 50;';
+	style_content += '}';
+	style_content += '.rickshaw_annotation_timeline .annotation.active .content {';
+	style_content += '        display: block;';
+	style_content += '}';
+	style_content += '.rickshaw_annotation_timeline .annotation:hover .content {';
+	style_content += '        display: block;';
+	style_content += '        z-index: 50;';
+	style_content += '}';
+	style_content += '.rickshaw_graph .y_axis,';
+	style_content += '.rickshaw_graph  .x_axis_d3 {';
+	style_content += '        fill: none;';
+	style_content += '}';
+	style_content += '.rickshaw_graph .y_ticks .tick line,';
+	style_content += '.rickshaw_graph .x_ticks_d3 .tick {';
+	style_content += '        stroke: rgba(0, 0, 0, 0.16);';
+	style_content += '        stroke-width: 2px;';
+	style_content += '        shape-rendering: crisp-edges;';
+	style_content += '        pointer-events: none;';
+	style_content += '}';
+	style_content += '.rickshaw_graph .y_grid .tick,';
+	style_content += '.rickshaw_graph .x_grid_d3 .tick {';
+	style_content += '        z-index: -1;';
+	style_content += '        stroke: rgba(0, 0, 0, 0.20);';
+	style_content += '        stroke-width: 1px;';
+	style_content += '        stroke-dasharray: 1 1;';
+	style_content += '}';
+	style_content += '.rickshaw_graph .y_grid .tick[data-y-value="0"] {';
+	style_content += '        stroke-dasharray: 1 0;';
+	style_content += '}';
+	style_content += '.rickshaw_graph .y_grid path,';
+	style_content += '.rickshaw_graph .x_grid_d3 path  {';
+	style_content += '        fill: none;';
+	style_content += '        stroke: none;';
+	style_content += '}';
+	style_content += '.rickshaw_graph .y_ticks path,';
+	style_content += '.rickshaw_graph .x_ticks_d3 path {';
+	style_content += '        fill: none;';
+	style_content += '        stroke: #808080;';
+	style_content += '}';
+	style_content += '.rickshaw_graph .y_ticks text,';
+	style_content += '.rickshaw_graph .x_ticks_d3 text {';
+	style_content += '        opacity: 0.5;';
+	style_content += '        font-size: 12px;';
+	style_content += '        pointer-events: none;';
+	style_content += '}';
+	style_content += '.rickshaw_graph .x_tick.glow .title,';
+	style_content += '.rickshaw_graph .y_ticks.glow text {';
+	style_content += '        fill: black;';
+	style_content += '        color: black;';
+	style_content += '        text-shadow: ';
+	style_content += '                -1px 1px 0 rgba(255, 255, 255, 0.1),';
+	style_content += '                1px -1px 0 rgba(255, 255, 255, 0.1),';
+	style_content += '                1px 1px 0 rgba(255, 255, 255, 0.1),';
+	style_content += '                0px 1px 0 rgba(255, 255, 255, 0.1),';
+	style_content += '                0px -1px 0 rgba(255, 255, 255, 0.1),';
+	style_content += '                1px 0px 0 rgba(255, 255, 255, 0.1),';
+	style_content += '                -1px 0px 0 rgba(255, 255, 255, 0.1),';
+	style_content += '                -1px -1px 0 rgba(255, 255, 255, 0.1);';
+	style_content += '}';
+	style_content += '.rickshaw_graph .x_tick.inverse .title,';
+	style_content += '.rickshaw_graph .y_ticks.inverse text {';
+	style_content += '        fill: white;';
+	style_content += '        color: white;';
+	style_content += '        text-shadow: ';
+	style_content += '                -1px 1px 0 rgba(0, 0, 0, 0.8),';
+	style_content += '                1px -1px 0 rgba(0, 0, 0, 0.8),';
+	style_content += '                1px 1px 0 rgba(0, 0, 0, 0.8),';
+	style_content += '                0px 1px 0 rgba(0, 0, 0, 0.8),';
+	style_content += '                0px -1px 0 rgba(0, 0, 0, 0.8),';
+	style_content += '                1px 0px 0 rgba(0, 0, 0, 0.8),';
+	style_content += '                -1px 0px 0 rgba(0, 0, 0, 0.8),';
+	style_content += '                -1px -1px 0 rgba(0, 0, 0, 0.8);';
+	style_content += '}';
+	style_content += '.rickshaw_legend {';
+	//style_content += '        font-family: Arial;';
+	style_content += '        font-size: 12px;';
+	style_content += '        /*color: white;';
+	style_content += '        background: #404040;*/';
+	style_content += '        display: inline-block;';
+	style_content += '        padding: 12px 5px; ';
+	style_content += '        border-radius: 2px;';
+	style_content += '        position: relative;';
+	style_content += '}';
+	style_content += '.rickshaw_legend:hover {';
+	style_content += '        z-index: 10;';
+	style_content += '}';
+	style_content += '.rickshaw_legend .swatch {';
+	style_content += '        width: 10px;';
+	style_content += '        height: 10px;';
+	style_content += '        border: 1px solid rgba(0, 0, 0, 0.2);';
+	style_content += '}';
+	style_content += '.rickshaw_legend .line {';
+	style_content += '        clear: both;';
+	style_content += '        line-height: 140%;';
+	style_content += '        padding-right: 15px;';
+	style_content += '}';
+	style_content += '.rickshaw_legend .line .swatch {';
+	style_content += '        display: inline-block;';
+	style_content += '        margin-right: 3px;';
+	style_content += '        border-radius: 2px;';
+	style_content += '}';
+	style_content += '.rickshaw_legend .label {';
+	style_content += '        margin: 0;';
+	style_content += '        white-space: nowrap;';
+	style_content += '        display: inline;';
+	style_content += '        font-size: inherit;';
+	style_content += '        background-color: transparent;';
+	style_content += '        color: inherit;';
+	style_content += '        font-weight: normal;';
+	style_content += '        line-height: normal;';
+	style_content += '        padding: 0px;';
+	style_content += '        text-shadow: none;';
+	style_content += '}';
+	style_content += '.rickshaw_legend .action:hover {';
+	style_content += '        opacity: 0.6;';
+	style_content += '}';
+	style_content += '.rickshaw_legend .action {';
+	style_content += '        margin-right: 0.2em;';
+	style_content += '        font-size: 10px;';
+	style_content += '        opacity: 0.2;';
+	style_content += '        cursor: pointer;';
+	style_content += '        font-size: 14px;';
+	style_content += '}';
+	style_content += '.rickshaw_legend .line.disabled {';
+	style_content += '        opacity: 0.4;';
+	style_content += '}';
+	style_content += '.rickshaw_legend ul {';
+	style_content += '        list-style-type: none;';
+	style_content += '        margin: 0;';
+	style_content += '        padding: 0;';
+	style_content += '        margin: 2px;';
+	style_content += '        cursor: pointer;';
+	style_content += '}';
+	style_content += '.rickshaw_legend li {';
+	style_content += '        padding: 0 0 0 2px;';
+	style_content += '        min-width: 80px;';
+	style_content += '        white-space: nowrap;';
+	style_content += '}';
+	style_content += '.rickshaw_legend li:hover {';
+	style_content += '        background: rgba(0, 0, 0, 0.08);';
+	style_content += '        border-radius: 3px;';
+	style_content += '}';
+	style_content += '.rickshaw_legend li:active {';
+	style_content += '        background: rgba(0, 0, 0, 0.2);';
+	style_content += '        border-radius: 3px;';
+	style_content += '}';
+
+	
+	style_content += '/* CSS de base structurant le graph et les éléments gravitant autour */';
+
+	style_content += '#chart_container {';
+	style_content += '        display: inline-block;';
+	style_content += '        margin: 0 20px 0 20px;';
+	//style_content += '        font-family: Arial, Helvetica, sans-serif;';
+	style_content += '}';
+	style_content += '#chart_footer {';
+	style_content += '        margin: 0 20px 0 20px;';
+	style_content += '}';
+	style_content += '#chart {';
+	style_content += '        float: left;';
+	style_content += '}';
+	style_content += '#legend {';
+	style_content += '}';
+	style_content += '#offset_form {';
+	style_content += '        float: right;';
+	style_content += '        margin-top: 15px;';
+	//style_content += '        font-size: 13px;';
+	style_content += '}';
+	style_content += '#y_axis {';
+	style_content += '        float: left;';
+	style_content += '        width: 40px;';
+	style_content += '}';
+	
+	
+	return style_content;
 }
 
 // Affiche les options de configuration
@@ -1227,11 +1727,11 @@ function main(data) {
 
 	currentFight.sumRounds();
 
-	// CREATION DU RESUME
+	// CRÉATION DU RÉSUMÉ
 	displayKikimeter();
 
-	// CREATION DU GRAPHE DES PV
-	displayLineChartLeeksPV();
+	// CRÉATION DU GRAPHE
+	displayChart();
 
 	// CRÉATION DU RÉCAP D'USAGE DES PT
 	displayPTusageTable();
