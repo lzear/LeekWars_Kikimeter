@@ -1,19 +1,22 @@
 // ==UserScript==
 // @name				LeekWars : LeeKikiMeter
-// @version				0.04
+// @version				0.04a
 // @description			Ce script affiche un résumé des combats de leekwars, des graphes et tableaux d'analyse
-// @match				http://leekwars.com/report/*
 // @author				Elzéar, yLark, Foudge, AlexClaw
-// @grant				GM_getValue
-// @grant				GM_setValue
+// @match				http://leekwars.com/report/*
 // @projectPage			https://github.com/Zear06/LeekWars_Kikimeter
 // @downloadURL			https://github.com/Zear06/LeekWars_Kikimeter/raw/master/kikimeter.user.js
 // @updateURL			https://github.com/Zear06/LeekWars_Kikimeter/raw/master/kikimeter.user.js
+// @grant				GM_getValue
+// @grant				GM_setValue
+// @grant				GM_addStyle
+// @grant				GM_getResourceText
 // @require				https://code.jquery.com/jquery-2.1.1.min.js
 // @require				http://kryogenix.org/code/browser/sorttable/sorttable.js
 // @require				https://raw.githubusercontent.com/mbostock/d3/master/d3.min.js
 // @require				https://raw.githubusercontent.com/shutterstock/rickshaw/master/vendor/d3.layout.min.js
 // @require				https://raw.githubusercontent.com/shutterstock/rickshaw/master/rickshaw.min.js
+// @resource			rickshaw_css	https://raw.githubusercontent.com/Zear06/LeekWars_Kikimeter/master/rickshaw.css
 // ==/UserScript==
 
 // URL DE LA PAGE PHP QUI RÉCEPTIONNE LES DONNÉES
@@ -1009,6 +1012,8 @@ function getGraphSeries() {
 // Affiche le graph dans la page
 function displayChart() {
 	
+	GM_addStyle(GM_getResourceText('rickshaw_css'));	// Ajout de la feuille de style disponible dans le repository
+	
 	// Création des objets DOM qui vont supporter le graph
 	
 	var html_content = '<h1>Courbes</h1>';
@@ -1035,13 +1040,9 @@ function displayChart() {
 	chart.id = 'main_chart_container';
 	chart.innerHTML = html_content;
 	
-	var style = document.createElement('style');
-	style.innerHTML = getRickshawStyle();
-	
 	// Insertion dans le DOM
 	var page = document.getElementById('page');
 	var report_actions = document.getElementById('report-actions');
-	page.insertBefore(style, report_actions);
 	page.insertBefore(chart, report_actions);
 	
 	
@@ -1115,402 +1116,6 @@ function displayChart() {
 	}, false);*/
 
 	graph.render();
-}
-
-// Feuille CSS pour les graph Rickshaw
-function getRickshawStyle() {
-
-	// Ajout des styles css. Je n'ai pas trouvé plus propre pour les ajouter au document...
-	// Un lien vers un fichier CSS sur Github ne fonctionne pas à cause du type MIME renvoyé qui n'est pas bon
-	
-	var style_content = '/*';
-	style_content += 'CSS originaire de : https://github.com/shutterstock/rickshaw/blob/master/rickshaw.css';
-	style_content += 'Légèrement modifié au niveau des légendes intéractives et des .area';
-	style_content += '*/';
-
-	style_content += '.rickshaw_graph .detail {';
-	style_content += '        pointer-events: none;';
-	style_content += '        position: absolute;';
-	style_content += '        top: 0;';
-	style_content += '        z-index: 2;';
-	style_content += '        background: rgba(0, 0, 0, 0.1);';
-	style_content += '        bottom: 0;';
-	style_content += '        width: 1px;';
-	style_content += '        transition: opacity 0.25s linear;';
-	style_content += '        -moz-transition: opacity 0.25s linear;';
-	style_content += '        -o-transition: opacity 0.25s linear;';
-	style_content += '        -webkit-transition: opacity 0.25s linear;';
-	style_content += '}';
-	style_content += '.rickshaw_graph .detail.inactive {';
-	style_content += '        display: none;';
-	style_content += '}';
-	style_content += '.rickshaw_graph .detail .item.active {';
-	style_content += '        opacity: 1;';
-	style_content += '}';
-	style_content += '.rickshaw_graph .detail .x_label {';
-	//style_content += '        font-family: Arial, sans-serif;';
-	style_content += '        border-radius: 3px;';
-	style_content += '        padding: 6px;';
-	style_content += '        opacity: 0.5;';
-	style_content += '        border: 1px solid #e0e0e0;';
-	style_content += '        font-size: 12px;';
-	style_content += '        position: absolute;';
-	style_content += '        background: white;';
-	style_content += '        white-space: nowrap;';
-	style_content += '}';
-	style_content += '.rickshaw_graph .detail .x_label.left {';
-	style_content += '        left: 0;';
-	style_content += '}';
-	style_content += '.rickshaw_graph .detail .x_label.right {';
-	style_content += '        right: 0;';
-	style_content += '}';
-	style_content += '.rickshaw_graph .detail .item {';
-	style_content += '        position: absolute;';
-	style_content += '        z-index: 2;';
-	style_content += '        border-radius: 3px;';
-	style_content += '        padding: 0.25em;';
-	style_content += '        font-size: 12px;';
-	//style_content += '        font-family: Arial, sans-serif;';
-	style_content += '        opacity: 0;';
-	style_content += '        background: rgba(0, 0, 0, 0.4);';
-	style_content += '        color: white;';
-	style_content += '        border: 1px solid rgba(0, 0, 0, 0.4);';
-	style_content += '        margin-left: 1em;';
-	style_content += '        margin-right: 1em;';
-	style_content += '        margin-top: -1em;';
-	style_content += '        white-space: nowrap;';
-	style_content += '}';
-	style_content += '.rickshaw_graph .detail .item.left {';
-	style_content += '        left: 0;';
-	style_content += '}';
-	style_content += '.rickshaw_graph .detail .item.right {';
-	style_content += '        right: 0;';
-	style_content += '}';
-	style_content += '.rickshaw_graph .detail .item.active {';
-	style_content += '        opacity: 1;';
-	style_content += '        background: rgba(0, 0, 0, 0.8);';
-	style_content += '}';
-	style_content += '.rickshaw_graph .detail .item:after {';
-	style_content += '        position: absolute;';
-	style_content += '        display: block;';
-	style_content += '        width: 0;';
-	style_content += '        height: 0;';
-	style_content += '        content: "";';
-	style_content += '        border: 5px solid transparent;';
-	style_content += '}';
-	style_content += '.rickshaw_graph .detail .item.left:after {';
-	style_content += '        top: 1em;';
-	style_content += '        left: -5px;';
-	style_content += '        margin-top: -5px;';
-	style_content += '        border-right-color: rgba(0, 0, 0, 0.8);';
-	style_content += '        border-left-width: 0;';
-	style_content += '}';
-	style_content += '.rickshaw_graph .detail .item.right:after {';
-	style_content += '        top: 1em;';
-	style_content += '        right: -5px;';
-	style_content += '        margin-top: -5px;';
-	style_content += '        border-left-color: rgba(0, 0, 0, 0.8);';
-	style_content += '        border-right-width: 0;';
-	style_content += '}';
-	style_content += '.rickshaw_graph .detail .dot {';
-	style_content += '        width: 4px;';
-	style_content += '        height: 4px;';
-	style_content += '        margin-left: -3px;';
-	style_content += '        margin-top: -3.5px;';
-	style_content += '        border-radius: 5px;';
-	style_content += '        position: absolute;';
-	style_content += '        box-shadow: 0 0 2px rgba(0, 0, 0, 0.6);';
-	style_content += '        box-sizing: content-box;';
-	style_content += '        -moz-box-sizing: content-box;';
-	style_content += '        background: white;';
-	style_content += '        border-width: 2px;';
-	style_content += '        border-style: solid;';
-	style_content += '        display: none;';
-	style_content += '        background-clip: padding-box;';
-	style_content += '}';
-	style_content += '.rickshaw_graph .detail .dot.active {';
-	style_content += '        display: block;';
-	style_content += '}';
-	
-	style_content += '/* graph */';
-	style_content += '.rickshaw_graph {';
-	style_content += '        position: relative;';
-	style_content += '}';
-	style_content += '.rickshaw_graph svg {';
-	style_content += '        display: block; ';
-	style_content += '        overflow: hidden;';
-	style_content += '}';
-	style_content += '.rickshaw_graph .area {';
-	style_content += '        opacity: 0.1; ';
-	style_content += '}';
-	
-	style_content += '/* ticks */';
-	style_content += '.rickshaw_graph .x_tick {';
-	style_content += '        position: absolute;';
-	style_content += '        top: 0;';
-	style_content += '        bottom: 0;';
-	style_content += '        width: 0px;';
-	style_content += '        border-left: 1px dotted rgba(0, 0, 0, 0.2);';
-	style_content += '        pointer-events: none;';
-	style_content += '}';
-	style_content += '.rickshaw_graph .x_tick .title {';
-	style_content += '        position: absolute;';
-	style_content += '        font-size: 12px;';
-	//style_content += '        font-family: Arial, sans-serif;';
-	style_content += '        opacity: 0.5;';
-	style_content += '        white-space: nowrap;';
-	style_content += '        margin-left: 3px;';
-	style_content += '        bottom: 1px;';
-	style_content += '}';
-
-	style_content += '/* annotations */';
-	style_content += '.rickshaw_annotation_timeline {';
-	style_content += '        height: 1px;';
-	style_content += '        border-top: 1px solid #e0e0e0;';
-	style_content += '        margin-top: 10px;';
-	style_content += '        position: relative;';
-	style_content += '}';
-	style_content += '.rickshaw_annotation_timeline .annotation {';
-	style_content += '        position: absolute;';
-	style_content += '        height: 6px;';
-	style_content += '        width: 6px;';
-	style_content += '        margin-left: -2px;';
-	style_content += '        top: -3px;';
-	style_content += '        border-radius: 5px;';
-	style_content += '        background-color: rgba(0, 0, 0, 0.25);';
-	style_content += '}';
-	style_content += '.rickshaw_graph .annotation_line {';
-	style_content += '        position: absolute;';
-	style_content += '        top: 0;';
-	style_content += '        bottom: -6px;';
-	style_content += '        width: 0px;';
-	style_content += '        border-left: 2px solid rgba(0, 0, 0, 0.3);';
-	style_content += '        display: none;';
-	style_content += '}';
-	style_content += '.rickshaw_graph .annotation_line.active {';
-	style_content += '        display: block;';
-	style_content += '}';
-
-	style_content += '.rickshaw_graph .annotation_range {';
-	style_content += '        background: rgba(0, 0, 0, 0.1);';
-	style_content += '        display: none;';
-	style_content += '        position: absolute;';
-	style_content += '        top: 0;';
-	style_content += '        bottom: -6px;';
-	style_content += '}';
-	style_content += '.rickshaw_graph .annotation_range.active {';
-	style_content += '        display: block;';
-	style_content += '}';
-	style_content += '.rickshaw_graph .annotation_range.active.offscreen {';
-	style_content += '        display: none;';
-	style_content += '}';
-
-	style_content += '.rickshaw_annotation_timeline .annotation .content {';
-	style_content += '        background: white;';
-	style_content += '        color: black;';
-	style_content += '        opacity: 0.9;';
-	style_content += '        padding: 5px 5px;';
-	style_content += '        box-shadow: 0 0 2px rgba(0, 0, 0, 0.8);';
-	style_content += '        border-radius: 3px;';
-	style_content += '        position: relative;';
-	style_content += '        z-index: 20;';
-	style_content += '        font-size: 12px;';
-	style_content += '        padding: 6px 8px 8px;';
-	style_content += '        top: 18px;';
-	style_content += '        left: -11px;';
-	style_content += '        width: 160px;';
-	style_content += '        display: none;';
-	style_content += '        cursor: pointer;';
-	style_content += '}';
-	style_content += '.rickshaw_annotation_timeline .annotation .content:before {';
-	style_content += '        content: "\25b2";';
-	style_content += '        position: absolute;';
-	style_content += '        top: -11px;';
-	style_content += '        color: white;';
-	style_content += '        text-shadow: 0 -1px 1px rgba(0, 0, 0, 0.8);';
-	style_content += '}';
-	style_content += '.rickshaw_annotation_timeline .annotation.active,';
-	style_content += '.rickshaw_annotation_timeline .annotation:hover {';
-	style_content += '        background-color: rgba(0, 0, 0, 0.8);';
-	style_content += '        cursor: none;';
-	style_content += '}';
-	style_content += '.rickshaw_annotation_timeline .annotation .content:hover {';
-	style_content += '        z-index: 50;';
-	style_content += '}';
-	style_content += '.rickshaw_annotation_timeline .annotation.active .content {';
-	style_content += '        display: block;';
-	style_content += '}';
-	style_content += '.rickshaw_annotation_timeline .annotation:hover .content {';
-	style_content += '        display: block;';
-	style_content += '        z-index: 50;';
-	style_content += '}';
-	style_content += '.rickshaw_graph .y_axis,';
-	style_content += '.rickshaw_graph  .x_axis_d3 {';
-	style_content += '        fill: none;';
-	style_content += '}';
-	style_content += '.rickshaw_graph .y_ticks .tick line,';
-	style_content += '.rickshaw_graph .x_ticks_d3 .tick {';
-	style_content += '        stroke: rgba(0, 0, 0, 0.16);';
-	style_content += '        stroke-width: 2px;';
-	style_content += '        shape-rendering: crisp-edges;';
-	style_content += '        pointer-events: none;';
-	style_content += '}';
-	style_content += '.rickshaw_graph .y_grid .tick,';
-	style_content += '.rickshaw_graph .x_grid_d3 .tick {';
-	style_content += '        z-index: -1;';
-	style_content += '        stroke: rgba(0, 0, 0, 0.20);';
-	style_content += '        stroke-width: 1px;';
-	style_content += '        stroke-dasharray: 1 1;';
-	style_content += '}';
-	style_content += '.rickshaw_graph .y_grid .tick[data-y-value="0"] {';
-	style_content += '        stroke-dasharray: 1 0;';
-	style_content += '}';
-	style_content += '.rickshaw_graph .y_grid path,';
-	style_content += '.rickshaw_graph .x_grid_d3 path  {';
-	style_content += '        fill: none;';
-	style_content += '        stroke: none;';
-	style_content += '}';
-	style_content += '.rickshaw_graph .y_ticks path,';
-	style_content += '.rickshaw_graph .x_ticks_d3 path {';
-	style_content += '        fill: none;';
-	style_content += '        stroke: #808080;';
-	style_content += '}';
-	style_content += '.rickshaw_graph .y_ticks text,';
-	style_content += '.rickshaw_graph .x_ticks_d3 text {';
-	style_content += '        opacity: 0.5;';
-	style_content += '        font-size: 12px;';
-	style_content += '        pointer-events: none;';
-	style_content += '}';
-	style_content += '.rickshaw_graph .x_tick.glow .title,';
-	style_content += '.rickshaw_graph .y_ticks.glow text {';
-	style_content += '        fill: black;';
-	style_content += '        color: black;';
-	style_content += '        text-shadow: ';
-	style_content += '                -1px 1px 0 rgba(255, 255, 255, 0.1),';
-	style_content += '                1px -1px 0 rgba(255, 255, 255, 0.1),';
-	style_content += '                1px 1px 0 rgba(255, 255, 255, 0.1),';
-	style_content += '                0px 1px 0 rgba(255, 255, 255, 0.1),';
-	style_content += '                0px -1px 0 rgba(255, 255, 255, 0.1),';
-	style_content += '                1px 0px 0 rgba(255, 255, 255, 0.1),';
-	style_content += '                -1px 0px 0 rgba(255, 255, 255, 0.1),';
-	style_content += '                -1px -1px 0 rgba(255, 255, 255, 0.1);';
-	style_content += '}';
-	style_content += '.rickshaw_graph .x_tick.inverse .title,';
-	style_content += '.rickshaw_graph .y_ticks.inverse text {';
-	style_content += '        fill: white;';
-	style_content += '        color: white;';
-	style_content += '        text-shadow: ';
-	style_content += '                -1px 1px 0 rgba(0, 0, 0, 0.8),';
-	style_content += '                1px -1px 0 rgba(0, 0, 0, 0.8),';
-	style_content += '                1px 1px 0 rgba(0, 0, 0, 0.8),';
-	style_content += '                0px 1px 0 rgba(0, 0, 0, 0.8),';
-	style_content += '                0px -1px 0 rgba(0, 0, 0, 0.8),';
-	style_content += '                1px 0px 0 rgba(0, 0, 0, 0.8),';
-	style_content += '                -1px 0px 0 rgba(0, 0, 0, 0.8),';
-	style_content += '                -1px -1px 0 rgba(0, 0, 0, 0.8);';
-	style_content += '}';
-	style_content += '.rickshaw_legend {';
-	//style_content += '        font-family: Arial;';
-	style_content += '        font-size: 12px;';
-	style_content += '        /*color: white;';
-	style_content += '        background: #404040;*/';
-	style_content += '        display: inline-block;';
-	style_content += '        padding: 12px 5px; ';
-	style_content += '        border-radius: 2px;';
-	style_content += '        position: relative;';
-	style_content += '}';
-	style_content += '.rickshaw_legend:hover {';
-	style_content += '        z-index: 10;';
-	style_content += '}';
-	style_content += '.rickshaw_legend .swatch {';
-	style_content += '        width: 10px;';
-	style_content += '        height: 10px;';
-	style_content += '        border: 1px solid rgba(0, 0, 0, 0.2);';
-	style_content += '}';
-	style_content += '.rickshaw_legend .line {';
-	style_content += '        clear: both;';
-	style_content += '        line-height: 140%;';
-	style_content += '        padding-right: 15px;';
-	style_content += '}';
-	style_content += '.rickshaw_legend .line .swatch {';
-	style_content += '        display: inline-block;';
-	style_content += '        margin-right: 3px;';
-	style_content += '        border-radius: 2px;';
-	style_content += '}';
-	style_content += '.rickshaw_legend .label {';
-	style_content += '        margin: 0;';
-	style_content += '        white-space: nowrap;';
-	style_content += '        display: inline;';
-	style_content += '        font-size: inherit;';
-	style_content += '        background-color: transparent;';
-	style_content += '        color: inherit;';
-	style_content += '        font-weight: normal;';
-	style_content += '        line-height: normal;';
-	style_content += '        padding: 0px;';
-	style_content += '        text-shadow: none;';
-	style_content += '}';
-	style_content += '.rickshaw_legend .action:hover {';
-	style_content += '        opacity: 0.6;';
-	style_content += '}';
-	style_content += '.rickshaw_legend .action {';
-	style_content += '        margin-right: 0.2em;';
-	style_content += '        font-size: 10px;';
-	style_content += '        opacity: 0.2;';
-	style_content += '        cursor: pointer;';
-	style_content += '        font-size: 14px;';
-	style_content += '}';
-	style_content += '.rickshaw_legend .line.disabled {';
-	style_content += '        opacity: 0.4;';
-	style_content += '}';
-	style_content += '.rickshaw_legend ul {';
-	style_content += '        list-style-type: none;';
-	style_content += '        margin: 0;';
-	style_content += '        padding: 0;';
-	style_content += '        margin: 2px;';
-	style_content += '        cursor: pointer;';
-	style_content += '}';
-	style_content += '.rickshaw_legend li {';
-	style_content += '        padding: 0 0 0 2px;';
-	style_content += '        min-width: 80px;';
-	style_content += '        white-space: nowrap;';
-	style_content += '}';
-	style_content += '.rickshaw_legend li:hover {';
-	style_content += '        background: rgba(0, 0, 0, 0.08);';
-	style_content += '        border-radius: 3px;';
-	style_content += '}';
-	style_content += '.rickshaw_legend li:active {';
-	style_content += '        background: rgba(0, 0, 0, 0.2);';
-	style_content += '        border-radius: 3px;';
-	style_content += '}';
-
-	
-	style_content += '/* CSS de base structurant le graph et les éléments gravitant autour */';
-
-	style_content += '#chart_container {';
-	style_content += '        display: inline-block;';
-	style_content += '        margin: 0 20px 0 20px;';
-	//style_content += '        font-family: Arial, Helvetica, sans-serif;';
-	style_content += '}';
-	style_content += '#chart_footer {';
-	style_content += '        margin: 0 20px 0 20px;';
-	style_content += '}';
-	style_content += '#chart {';
-	style_content += '        float: left;';
-	style_content += '}';
-	style_content += '#legend {';
-	style_content += '}';
-	style_content += '#offset_form {';
-	style_content += '        float: right;';
-	style_content += '        margin-top: 15px;';
-	//style_content += '        font-size: 13px;';
-	style_content += '}';
-	style_content += '#y_axis {';
-	style_content += '        float: left;';
-	style_content += '        width: 40px;';
-	style_content += '}';
-	
-	
-	return style_content;
 }
 
 // Affiche les options de configuration
