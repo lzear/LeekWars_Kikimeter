@@ -1362,7 +1362,6 @@ function main(data) {
 	readActions();
 
 	currentFight.sumRounds();
-	console.log(currentFight);
 
 	// CRÉATION DU RÉSUMÉ
 	displayKikimeter();
