@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name				LeekWars : LeeKikiMeter
-// @version				0.04a
+// @version				0.04b
 // @description			Ce script affiche un résumé des combats de leekwars, des graphes et tableaux d'analyse
 // @author				Elzéar, yLark, Foudge, AlexClaw
 // @match				http://leekwars.com/report/*
@@ -30,6 +30,8 @@ var dispData = {
 	'dmg_out': 1,
 	'heal_in': 1,
 	'heal_out': 1,
+	'vitality_in': 0,
+	'vitality_out': 0,
 	'lastHits': 1,
 	'usedPT': 1,
 	'PTperTurn': 1,
@@ -123,6 +125,8 @@ var roundData = { // variables relatives aux Leeks/rounds
 	'actionsChip': 'Usages Chips',
 	'dmg_in': 'Dégats reçus',
 	'dmg_out': 'Dégats infligés',
+	'vitality_in': 'Vitalité reçue',
+	'vitality_out': 'Vitalité lancée',
 	'heal_in': 'Soins reçus',
 	'heal_out': 'Soins lancés',
 	'lastHits': 'Kills',
@@ -151,6 +155,7 @@ function Fight() {
 	this.addLeek = function(team, tr) {
 		var name = tr.getElementsByClassName('name')[0].textContent;
 		this.leeks[name] = new Leek(name, team, tr);
+		this.teams[team].addLeek(name);
 		this.nbLeeks++;
 	}
 	this.addTeam = function(team, tr) {
@@ -332,7 +337,11 @@ function Team(tr) {
 	
 	this.addLeek = function(name) {
 		this.leeks.push(name);
-		this.nbLeeks = count(this.leeks);
+		this.nbLeeks++;
+	}
+	
+	this.color = function() {
+		return currentFight.leeks[this.leeks[0]].color;
 	}
 }
 
@@ -425,6 +434,12 @@ function readActions() {
 		if (/^([^\s]+) gagne ([0-9]+) PV$/.test(actions[i].textContent)) {
 			currentFight.leeks[RegExp.$1].addToRoundData(round, 'heal_in', parseInt(RegExp.$2.replace(/[^\d.]/g, '')));
 			if (attacker != null) currentFight.leeks[attacker].addToRoundData(round, 'heal_out', parseInt(RegExp.$2.replace(/[^\d.]/g, '')));
+		}
+		
+		// VITALITÉ
+		if (/^([^\s]+) gagne ([0-9]+) vitalité$/.test(actions[i].textContent)) {
+			currentFight.leeks[RegExp.$1].addToRoundData(round, 'vitality_in', parseInt(RegExp.$2.replace(/[^\d.]/g, '')));
+			if (attacker != null) currentFight.leeks[attacker].addToRoundData(round, 'vitality_out', parseInt(RegExp.$2.replace(/[^\d.]/g, '')));
 		}
 
 		// ARME ÉQUIPÉE
@@ -918,25 +933,38 @@ function colorize_report_general() {
 // Génération des données pour le graph Rickshaw
 function getGraphSeries() {
 	
+	var palette_red  = new Rickshaw.Color.Palette({scheme : ['#DC3900','#F39E5B','#F34739','#E9930C','#E90C5B','#E9B106']});		// Palette de couleur perso
+	var palette_blue = new Rickshaw.Color.Palette({scheme : ['#0223AB','#307DC2','#5B4BC2','#079EB8','#5B07B8','#07B897']});		// Palette de couleur perso
 	var palette = new Rickshaw.Color.Palette({ scheme: 'munin' });		// Palette de couleur automatique
 	var series = [];
 	
 	for (var leek in currentFight.leeks) {	// Boucle sur les tours pour recalculer l'évolution de la vie des poireaux
 		var totalLife = currentFight.leeks[leek].life;
 		var data = [];
+		
+		if(currentFight.nbLeeks <= 2){	// Si on est en combat solo
+			var serie_color = currentFight.leeks[leek].color;
+		}else if( currentFight.leeks[leek].color === 'rgb(220, 0, 0)'){	// Si on est dans l'équipe rouge
+			var serie_color = palette_red.color();
+		}else{
+			var serie_color = palette_blue.color();
+		}
+		
 		for (var i = 1; i <= currentFight.nbRounds; i++) {
 			var dmg_in = currentFight.leeks[leek].getRoundData(i, 'dmg_in');
 			var heal_in = currentFight.leeks[leek].getRoundData(i, 'heal_in');
-			var diffPV = ((heal_in != null) ? heal_in : 0) - ((dmg_in != null) ? dmg_in : 0);
+			var vitality_in = currentFight.leeks[leek].getRoundData(i, 'vitality_in');
+			var diffPV = ((heal_in != null) ? heal_in : 0) + ((vitality_in != null) ? vitality_in : 0) - ((dmg_in != null) ? dmg_in : 0);
 			if (i === 1)
 				data[i-1] = {'x': i, 'y': totalLife + diffPV};
 			else
 				data[i-1] = {'x': i, 'y': data[i - 2].y + diffPV};
 			if (data[i-1].y === 0) break; // Le poireau est mort, on ne continue pas à tracer sa vie
 		}
+		
 		var dataset = {
 			name: 'PV - ' + currentFight.leeks[leek].name,
-			color: ( currentFight.nbLeeks <=2 ) ? currentFight.leeks[leek].color : palette.color(),	// Si on n'a que deux poireaux, on trace des graph des couleurs des poireaux, sinon on garde la couleur auto
+			color: serie_color,
 			data: data
 		};
 		series.push(dataset);
@@ -974,7 +1002,8 @@ function getGraphSeries() {
 			
 			var dmg_in = currentFight.leeks[leek].getRoundData(i, 'dmg_in');
 			var heal_in = currentFight.leeks[leek].getRoundData(i, 'heal_in');
-			var diffPV = ((heal_in != null) ? heal_in : 0) - ((dmg_in != null) ? dmg_in : 0);
+			var vitality_in = currentFight.leeks[leek].getRoundData(i, 'vitality_in');
+			var diffPV = ((heal_in != null) ? heal_in : 0) + ((vitality_in != null) ? vitality_in : 0) - ((dmg_in != null) ? dmg_in : 0);
 			teams[team].life[i-1] += diffPV;
 		}
 		
@@ -986,14 +1015,14 @@ function getGraphSeries() {
 	if( currentFight.nbLeeks > 2 ){		// N'envoie les données de vie des équipes 1 et 2 seulement si on n'est pas en combat solo
 		var dataset = {
 			name: 'PV - ' + teamName[0],
-			color: palette.color(),
+			color: currentFight.teams[0].color(),
 			data: dataTeam0
 		};
 		series.push(dataset);
 		
 		var dataset = {
 			name: 'PV - ' + teamName[1],
-			color: palette.color(),
+			color: currentFight.teams[1].color(),
 			data: dataTeam1
 		};
 		series.push(dataset);
@@ -1056,12 +1085,14 @@ function displayChart() {
 		renderer: 'area',	// alternative : 'line'
 		stack: false,		// Est-ce qu'on empile les courbes ? Nécessite que les séries aient les mêmes dimensions
 		stroke: true,
+		preserve: true,
 		interpolation: 'monotone',	// alternative : 'line'
 		series: getGraphSeries()	// Récupère les séries à tracer
 	} );
 
 	var xAxis = new Rickshaw.Graph.Axis.X( {	// Créé l'axe X
-		graph: graph
+		graph: graph,
+		ticksTreatment: 'glow'
 	} );
 
 	var yAxis = new Rickshaw.Graph.Axis.Y( {	// Créé l'axe Y
@@ -1078,10 +1109,10 @@ function displayChart() {
 		legend: legend
 	} );
 
-	var highlighter = new Rickshaw.Graph.Behavior.Series.Highlight( {	// Mise en surbrillance des lignes au survol de la légende
+	/*var highlighter = new Rickshaw.Graph.Behavior.Series.Highlight( {	// Mise en surbrillance des lignes au survol de la légende
 		graph: graph,
 		legend: legend
-	} );
+	} );*/
 
 	var hoverDetail = new Rickshaw.Graph.HoverDetail( {		// Étiquettes affichée au survol
 		graph: graph,
@@ -1331,6 +1362,7 @@ function main(data) {
 	readActions();
 
 	currentFight.sumRounds();
+	console.log(currentFight);
 
 	// CRÉATION DU RÉSUMÉ
 	displayKikimeter();
@@ -1385,6 +1417,8 @@ function main(data) {
 			'dmg_out',
 			'heal_in',
 			'heal_out',
+			'vitality_in',
+			'vitality_out',
 			'fails',
 			'lastHits',
 			'blabla',
