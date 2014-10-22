@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name				LeekWars : LeeKikiMeter
-// @version				0.04b
-// @description			Ce script affiche un résumé des combats de leekwars, des graphes et tableaux d'analyse
+// @version				0.4.3
+// @description			Ce script améliore le rapport de combat : affiche un résumé des combats de leekwars, des graphes et tableaux d'analyse
 // @author				Elzéar, yLark, Foudge, AlexClaw
 // @match				http://leekwars.com/report/*
 // @projectPage			https://github.com/Zear06/LeekWars_Kikimeter
@@ -83,6 +83,7 @@ for (var key in dispData) {
 
 // Modules
 var leekikimeterModules = {
+	'error_notification' : 'Errors et Warnings',
 	'report-general' : 'Rapport de combat',
 	'report-resume' : 'Résumé',
 	'main_chart_container' : 'Courbes',
@@ -1149,6 +1150,46 @@ function displayChart() {
 	graph.render();
 }
 
+// Ajoute une information sur le nombre d'erreurs et d'alertes présentes dans le debug
+function add_error_notification() {
+	
+	var log_type = ['error', 'warning'];	// deux class à parser
+	
+	var div_1 = document.createElement('div');
+	div_1.id = 'error_notification';
+	
+	for(var i = 0; i < log_type.length; i++){	// Boucle sur les types de notification qui nous intéressent : warning et erreur
+		var logs = document.getElementsByClassName('log ' + log_type[i]);
+		
+		if(logs.length > 0){
+			// Ajout d'un récap du nombre d'erreurs
+			div_sum = document.createElement('div');
+			div_sum.style.cursor = 'pointer';
+			div_sum.className = 'log ' + log_type[i];
+			div_sum.setAttribute('onclick', '$(\'#kikimeter_' + log_type[i] + '\').toggle()');	// Rend le div cliquable pour dérouler ou non le détail
+			div_sum.textContent = logs.length + ' ' + log_type[i] + ((logs.length > 1) ? 's' : '');
+			div_1.appendChild(div_sum);
+			
+			// div contenant le détail de toutes les notifications d'erreur
+			div_2 = document.createElement('div');
+			div_2.id = 'kikimeter_' + log_type[i];
+			div_2.style = 'display:none;';
+
+			for(var j = 0; j < logs.length; j++) {
+				var a = document.createElement('a');
+				a.href = '#kikimeter_' + log_type[i] + j;	// Ajout d'un lien vers le code d'erreur dans le log du combat
+				var temp_log = logs[j].cloneNode(true);		// Clonage du message d'erreur
+				temp_log.className = temp_log.className.replace('first', '').replace('last', '');	// Supprime les classes css 'first' et 'last' qui produisent des margin inutiles
+				a.appendChild(temp_log);
+				div_2.appendChild(a);
+				logs[j].id = 'kikimeter_' + log_type[i] + j;	// Création de l'id du code d'erreur dans le log, pour que le lien puisse y faire référence
+			}
+			div_1.appendChild(div_2);
+		}
+	}
+	document.getElementById('duration').appendChild(div_1);
+}
+
 // Affiche les options de configuration
 function displayConfig() {
 	// Création de la div de configuration, avec bouton de toggle
@@ -1377,6 +1418,9 @@ function main(data) {
 
 	// AFFICHE LES OPTIONS DE CONFIGURATION
 	displayConfig();
+	
+	// AJOUT DES NOTIFICATIONS D'ERROR ET WARNING EN TÊTE DE RAPPORT
+	add_error_notification();
 
 	// APPLIQUE LA CONFIGURATION EXISTANTE
 	initConfig();
