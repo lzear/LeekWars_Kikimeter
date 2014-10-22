@@ -1167,12 +1167,12 @@ function add_error_notification() {
 		
 		if(logs.length > 0){
 			// Ajout d'un récap du nombre d'erreurs
-			div_sum = document.createElement('div');
-			div_sum.style.cursor = 'pointer';
-			div_sum.className = 'log ' + log_type[i];
-			div_sum.setAttribute('onclick', '$(\'#kikimeter_' + log_type[i] + '\').toggle()');	// Rend le div cliquable pour dérouler ou non le détail
-			div_sum.textContent = logs.length + ' ' + log_type[i] + ((logs.length > 1) ? 's' : '');
-			div_1.appendChild(div_sum);
+			span = document.createElement('span');
+			span.style.cursor = 'pointer';
+			span.className = 'log ' + log_type[i];
+			span.setAttribute('onclick', '$(\'#kikimeter_' + log_type[i] + '\').toggle()');	// Rend le div cliquable pour dérouler ou non le détail
+			span.textContent = logs.length + ' ' + log_type[i] + ((logs.length > 1) ? 's' : '');
+			div_1.appendChild(span);
 			
 			// div contenant le détail de toutes les notifications d'erreur
 			div_2 = document.createElement('div');
