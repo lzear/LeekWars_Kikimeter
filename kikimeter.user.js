@@ -1173,7 +1173,7 @@ function add_error_notification() {
 			// div contenant le détail de toutes les notifications d'erreur
 			div_2 = document.createElement('div');
 			div_2.id = 'kikimeter_' + log_type[i];
-			div_2.style = 'display:none;';
+			div_2.style.display = 'none';
 
 			for(var j = 0; j < logs.length; j++) {
 				var a = document.createElement('a');
