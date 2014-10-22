@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name				LeekWars : LeeKikiMeter
-// @version				0.4.3
+// @version				0.4.4
 // @description			Ce script améliore le rapport de combat : affiche un résumé des combats de leekwars, des graphes et tableaux d'analyse
 // @author				Elzéar, yLark, Foudge, AlexClaw
 // @match				http://leekwars.com/report/*
@@ -1078,6 +1078,10 @@ function displayChart() {
 	
 	// Paramètage du graph rickshaw
 
+	// Récupère le choix d'interpolation de l'utilisateur
+	var checked = GM_getValue(STORAGE_DISPLAY_PREFIX + 'graph-interpolation', 1);
+	var interpolation_choice = (checked === 1)?'monotone':'line';
+	
 	var graph = new Rickshaw.Graph( {
 		element: document.querySelector("#chart"),
 		width: 930,
@@ -1087,7 +1091,7 @@ function displayChart() {
 		stack: false,		// Est-ce qu'on empile les courbes ? Nécessite que les séries aient les mêmes dimensions
 		stroke: true,
 		preserve: true,
-		interpolation: 'monotone',	// alternative : 'line'
+		interpolation: interpolation_choice,
 		series: getGraphSeries()	// Récupère les séries à tracer
 	} );
 
@@ -1232,6 +1236,19 @@ function displayConfig() {
 		var value = $(this).is(':checked') ? 1 : 0;
 		dispData[key] = value;
 		GM_setValue(STORAGE_PREFIX + key, value);
+	});
+	
+	// Configuration du graph
+	var configGraphDiv = '<h2>Graphique</h2><div id="kikimeter-config-graph"></div>';
+	var key = 'graph-interpolation';
+	var checked = GM_getValue(STORAGE_DISPLAY_PREFIX + key, 1);
+	config.append(configGraphDiv);
+	var configGraph = $('#kikimeter-config-graph');
+	configGraph.append('<div><input type="checkbox" id="' + STORAGE_DISPLAY_PREFIX + key + '" name="' + key + '"' + (checked == 1 ? 'checked' : '') + '/><label for="' + STORAGE_DISPLAY_PREFIX + key + '">Lissage de courbe</label></div>');
+	$('#kikimeter-config-graph input[type=checkbox]').change(function() {
+		var key = $(this).attr('name');
+		var value = $(this).is(':checked') ? 1 : 0;
+		GM_setValue(STORAGE_DISPLAY_PREFIX + key, value);
 	});
 
 	// Configuration de l'URL d'envoi des données
