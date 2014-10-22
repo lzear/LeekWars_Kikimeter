@@ -6,12 +6,15 @@ Les fichiers de ce Git sont un outil pour les joueurs du jeu [LeekWars](http://l
 kikimeter.js
 ------------
 
-script JavaScript pour TamperMonkey ou GreaseMonkey.
+Script JavaScript pour TamperMonkey ou GreaseMonkey.
   
-  Affiche des statistiques complémentaires dans le rapport de combat :
+  Insère des informations complémentaires dans la page *Rapport de combat* :
+  - un résumé des `Error` et `Warning` avec lien cliquable ;
   - un tableau des statistiques du combat ;
+  - un graphique d'évolution des PV ;
   - un tableau de synthèse de l'usage des PT ;
-  - une série de hauts faits.
+  - une série de hauts faits ;
+  - un menu de paramètres pour personnaliser tout ça.
   
 Tous les tableaux peuvent être triés en cliquant sur les entêtes de colonne.
   
@@ -35,8 +38,9 @@ Envoie les données à la table SQL.
   
 Images
 -------
-![Rapport de combat](http://i.imgur.com/gN88pKu.png)
+![Rapport de combat](http://i.imgur.com/Oo0rJWH.png)
 ![Résumé](http://i.imgur.com/PaCPDkP.png)
+![Graphique](http://i.imgur.com/1Cfm56D.png)
 ![Utilisation des PT](http://i.imgur.com/Is4cLKL.png)
 ![Hauts Faits](http://i.imgur.com/6ou1HZW.png)
 ![sql](http://i.imgur.com/CLil5Rp.png)
