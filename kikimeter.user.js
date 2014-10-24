@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name				LeekWars : LeeKikiMeter
-// @version				0.4.5
+// @version				0.4.6
 // @description			Ce script améliore le rapport de combat : affiche un résumé des combats de leekwars, des graphes et tableaux d'analyse
 // @author				Elzéar, yLark, Foudge, AlexClaw
 // @match				http://leekwars.com/report/*
@@ -33,8 +33,10 @@ var dispData = {
 	'vitality_in': 0,
 	'vitality_out': 0,
 	'lastHits': 1,
-	'usedPT': 1,
-	'PTperTurn': 1,
+	'usedPT': 0,
+	'usedUsefulPT': 0,
+	'PTperTurn': 0,
+	'usefulPTperTurn': 1,
 	'usedPM': 1,
 	'roundsPlayed': 1,
 	'equipWeapon': 0,
@@ -101,7 +103,8 @@ var leekData = { // variables relatives aux Leeks
 	'alive': 'Vivant',
 	'level': 'Niveau',
 	'XP': 'XP',
-	'PTperTurn': 'PT/tour',
+	'PTperTurn': 'PT/tour',					// say() inclus
+	'usefulPTperTurn': 'PT/tour utiles',	// say() exclus
 	'gainXP': 'Gain XP',
 	'gainTalent': 'Gain Talent',
 	'gainHabs': 'Gain Habs',
@@ -119,7 +122,8 @@ var leekData = { // variables relatives aux Leeks
 };
 var roundData = { // variables relatives aux Leeks/rounds
 	'roundsPlayed': 'Tours joués',
-	'usedPT': 'PT utilisés',
+	'usedPT': 'PT utilisés',	// Compte tous les PT, say() inclus
+	'usedUsefulPT': 'PT utilisés utiles',	// Compte les PT, say() exclus
 	'usedPM': 'PM utilisés',
 	'equipWeapon': 'Armes équipées', // Nombre de fois qu'une arme est équipée
 	'actionsWeapon': 'Tirs', // Nombre de tirs
@@ -318,6 +322,7 @@ function Leek(name, team, tr) {
 	}
 	this.makePTperTurn = function() {
 		this.PTperTurn = this.usedPT / this.roundsPlayed;
+		this.usefulPTperTurn = this.usedUsefulPT / this.roundsPlayed;
 	}
 }
 
@@ -417,6 +422,7 @@ function readActions() {
 		// usedPT
 		if (/^([^\s]+) perd ([0-9]+) PT$/.test(actions[i].textContent)) {
 			currentFight.leeks[RegExp.$1].addToRoundData(round, 'usedPT', parseInt(RegExp.$2));
+			currentFight.leeks[RegExp.$1].addToRoundData(round, 'usedUsefulPT', parseInt(RegExp.$2));
 			lastPTcount = parseInt(RegExp.$2);
 		}
 
@@ -470,6 +476,7 @@ function readActions() {
 
 		// BLABLA
 		if (/^([^\s]+) dit : /.test(actions[i].textContent)) {
+			currentFight.leeks[RegExp.$1].addToRoundData(round, 'usedUsefulPT', -1);
 			currentFight.leeks[RegExp.$1].addToRoundData(round, 'blabla', 1);
 			lastPTaction = 'Blabla';
 		}
@@ -1471,6 +1478,9 @@ function main(data) {
 			'gainHabs',
 			'roundsPlayed',
 			'usedPT',
+			'usedUsefulPT',
+			'PTperTurn',
+			'usefulPTperTurn',
 			'usedPM',
 			'equipWeapon',
 			'actionsWeapon',
