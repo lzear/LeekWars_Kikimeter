@@ -34,7 +34,7 @@ var dispData = {
 	'vitality_out': 0,
 	'lastHits': 1,
 	'usedPT': 0,
-	'usedUsefulPT': 0,
+	'usedUsefulPT': 1,
 	'PTperTurn': 0,
 	'usefulPTperTurn': 1,
 	'usedPM': 1,
