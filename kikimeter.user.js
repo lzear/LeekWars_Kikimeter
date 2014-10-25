@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name				LeekWars : LeeKikiMeter
-// @version				0.4.7
+// @version				0.4.8
 // @description			Ce script améliore le rapport de combat : affiche un résumé des combats de leekwars, des graphes et tableaux d'analyse
 // @author				Elzéar, yLark, Foudge, AlexClaw
 // @match				http://leekwars.com/report/*
@@ -591,20 +591,20 @@ function generateHighlights() {
 	}
 
 	// Survivant
-	var BestLeek = null;
-	var draw = false;
-	for (var j in currentFight.leeks) {
-		if (BestLeek != null && currentFight.leeks[j]['roundsPlayed'] == currentFight.leeks[BestLeek]['roundsPlayed']) {
-			draw = true;
+	if (currentFight.nbLeeks > 2)
+	{
+		var BestLeek = null;
+		var aliveLeeksCount = 0;
+		for (var j in currentFight.leeks) {
+			if (currentFight.leeks[j].alive != 0)
+			{
+				aliveLeeksCount++;
+				BestLeek = j;
+			}
 		}
-		if (BestLeek == null || currentFight.leeks[j]['roundsPlayed'] > currentFight.leeks[BestLeek]['roundsPlayed']) {
-			BestLeek = j;
-			draw = false;
+		if (aliveLeeksCount == 1 && currentFight.teams[currentFight.leeks[BestLeek].team].nbLeeks > 1) {
+			Highlights['survivant'] = new Highlight('http://static.leekwars.com/image/trophy/winner.png', 'Survivant', '<span style="color:' + currentFight.leeks[BestLeek]['color'] + ';">' + currentFight.leeks[BestLeek]['name'] + '</span> est  le seul survivant', null);
 		}
-	}
-	if (draw == false && currentFight.nbLeeks > 2 && currentFight.teams[currentFight.leeks[BestLeek].team].nbLeeks > 1) {
-		//if(draw == false &&  currentFight.nbLeeks > 2 && currentFight.teams[currentFight.leeks[BestLeek].team] > 1 ){
-		Highlights['survivant'] = new Highlight('http://static.leekwars.com/image/trophy/winner.png', 'Survivant', '<span style="color:' + currentFight.leeks[BestLeek]['color'] + ';">' + currentFight.leeks[BestLeek]['name'] + '</span> est  le seul survivant', null);
 	}
 }
 
