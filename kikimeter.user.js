@@ -1015,7 +1015,7 @@ function getGraphSeries() {
 			teams[team].life[i-1] += diffPV;
 		}
 		
-		data[i-1] = {'x': i, 'y': ((teams[1].TotalLife - teams[1].life[i-1]) / teams[1].TotalLife - (teams[0].TotalLife - teams[0].life[i-1]) / teams[0].TotalLife)*100};
+		data[i-1] = {'x': i, 'y': (teams[0].life[i-1] / teams[0].TotalLife - teams[1].life[i-1] / teams[1].TotalLife)*100};
 		dataTeam0[i-1] = {'x': i, 'y': (teams[0].TotalLife + teams[0].life[i-1])};
 		dataTeam1[i-1] = {'x': i, 'y': (teams[1].TotalLife + teams[1].life[i-1])};
 	}
