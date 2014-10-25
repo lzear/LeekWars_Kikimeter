@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name				LeekWars : LeeKikiMeter
-// @version				0.4.6
+// @version				0.4.7
 // @description			Ce script améliore le rapport de combat : affiche un résumé des combats de leekwars, des graphes et tableaux d'analyse
 // @author				Elzéar, yLark, Foudge, AlexClaw
 // @match				http://leekwars.com/report/*
@@ -958,16 +958,18 @@ function getGraphSeries() {
 			var serie_color = palette_blue.color();
 		}
 		
-		for (var i = 1; i <= currentFight.nbRounds; i++) {
-			var dmg_in = currentFight.leeks[leek].getRoundData(i, 'dmg_in');
-			var heal_in = currentFight.leeks[leek].getRoundData(i, 'heal_in');
-			var vitality_in = currentFight.leeks[leek].getRoundData(i, 'vitality_in');
+		data[0] = {'x': 1, 'y': totalLife};
+		
+		for (var round = 1; round <= currentFight.nbRounds; round++) {
+			var dmg_in = currentFight.leeks[leek].getRoundData(round, 'dmg_in');
+			var heal_in = currentFight.leeks[leek].getRoundData(round, 'heal_in');
+			var vitality_in = currentFight.leeks[leek].getRoundData(round, 'vitality_in');
 			var diffPV = ((heal_in != null) ? heal_in : 0) + ((vitality_in != null) ? vitality_in : 0) - ((dmg_in != null) ? dmg_in : 0);
-			if (i === 1)
-				data[i-1] = {'x': i, 'y': totalLife + diffPV};
+			if (round === 1)
+				data[round] = {'x': round+1, 'y': totalLife + diffPV};
 			else
-				data[i-1] = {'x': i, 'y': data[i - 2].y + diffPV};
-			if (data[i-1].y === 0) break; // Le poireau est mort, on ne continue pas à tracer sa vie
+				data[round] = {'x': round+1, 'y': data[round - 1].y + diffPV};
+			if (data[round].y === 0) break; // Le poireau est mort, on ne continue pas à tracer sa vie
 		}
 		
 		var dataset = {
@@ -997,27 +999,27 @@ function getGraphSeries() {
 		}
 	}
 	
-	for (var i = 1; i <= currentFight.nbRounds; i++) {	// Boucle sur les tours pour recalculer l'évolution de la vie des équipes
+	for (var round = 0; round <= currentFight.nbRounds; round++) {	// Boucle sur les tours pour recalculer l'évolution de la vie des équipes
 	
-		if(teams[0].life[i-1] == undefined) teams[0].life[i-1] = (i == 1) ? 0 : teams[0].life[i - 2];
-		if(teams[1].life[i-1] == undefined) teams[1].life[i-1] = (i == 1) ? 0 : teams[1].life[i - 2];
+		if(teams[0].life[round] == undefined) teams[0].life[round] = (round === 0) ? 0 : teams[0].life[round - 1];
+		if(teams[1].life[round] == undefined) teams[1].life[round] = (round === 0) ? 0 : teams[1].life[round - 1];
 			
 		for (var leek in currentFight.leeks) {
 			var team = currentFight.leeks[leek].team;
 			
-			if(i == 1)
+			if(round === 0){
 				teams[team].TotalLife += currentFight.leeks[leek].life;
-			
-			var dmg_in = currentFight.leeks[leek].getRoundData(i, 'dmg_in');
-			var heal_in = currentFight.leeks[leek].getRoundData(i, 'heal_in');
-			var vitality_in = currentFight.leeks[leek].getRoundData(i, 'vitality_in');
-			var diffPV = ((heal_in != null) ? heal_in : 0) + ((vitality_in != null) ? vitality_in : 0) - ((dmg_in != null) ? dmg_in : 0);
-			teams[team].life[i-1] += diffPV;
+			}else{
+				var dmg_in = currentFight.leeks[leek].getRoundData(round, 'dmg_in');
+				var heal_in = currentFight.leeks[leek].getRoundData(round, 'heal_in');
+				var vitality_in = currentFight.leeks[leek].getRoundData(round, 'vitality_in');
+				var diffPV = ((heal_in != null) ? heal_in : 0) + ((vitality_in != null) ? vitality_in : 0) - ((dmg_in != null) ? dmg_in : 0);
+				teams[team].life[round] += diffPV;
+			}
 		}
-		
-		data[i-1] = {'x': i, 'y': (teams[0].life[i-1] / teams[0].TotalLife - teams[1].life[i-1] / teams[1].TotalLife)*100};
-		dataTeam0[i-1] = {'x': i, 'y': (teams[0].TotalLife + teams[0].life[i-1])};
-		dataTeam1[i-1] = {'x': i, 'y': (teams[1].TotalLife + teams[1].life[i-1])};
+		data[round] = {'x': round+1, 'y': (teams[0].life[round] / teams[0].TotalLife - teams[1].life[round] / teams[1].TotalLife)*100};
+		dataTeam0[round] = {'x': round+1, 'y': (teams[0].TotalLife + teams[0].life[round])};
+		dataTeam1[round] = {'x': round+1, 'y': (teams[1].TotalLife + teams[1].life[round])};
 	}
 	
 	if( currentFight.nbLeeks > 2 ){		// N'envoie les données de vie des équipes 1 et 2 seulement si on n'est pas en combat solo
@@ -1128,7 +1130,7 @@ function displayChart() {
 
 	var hoverDetail = new Rickshaw.Graph.HoverDetail( {		// Étiquettes affichée au survol
 		graph: graph,
-		xFormatter: function(x) { return "Tour " + x },
+		xFormatter: function(x) { return "Tour " + x},
 		yFormatter: function(y) { return Math.round(y*10)/10}
 	} );
 
