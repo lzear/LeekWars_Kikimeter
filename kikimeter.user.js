@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name				LeekWars : LeeKikiMeter
-// @version				0.4.8
+// @version				0.4.9
 // @description			Ce script améliore le rapport de combat : affiche un résumé des combats de leekwars, des graphes et tableaux d'analyse
 // @author				Elzéar, yLark, Foudge, AlexClaw
 // @match				http://leekwars.com/report/*
@@ -458,12 +458,12 @@ function readActions() {
 		}
 
 		// ECHEC
-		if (/^([^\s]+) tire... Échec !$/.test(actions[i].textContent)) {
+		if (/^([^\s]+) tire... Échec$/.test(actions[i].textContent)) {
 			currentFight.leeks[RegExp.$1].addToRoundData(round, 'fails', 1);
 			currentFight.leeks[RegExp.$1].addToRoundData(round, 'actionsWeapon', 1);
 			lastPTaction = 'Échec';
 		}
-		if (/^([^\s]+) lance (.+)... Échec !$/.test(actions[i].textContent)) {
+		if (/^([^\s]+) lance (.+)... Échec$/.test(actions[i].textContent)) {
 			currentFight.leeks[RegExp.$1].addToRoundData(round, 'fails', 1);
 			currentFight.leeks[RegExp.$1].addToRoundData(round, 'actionsChip', 1);
 			lastPTaction = 'Échec';
