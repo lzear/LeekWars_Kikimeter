@@ -35,6 +35,8 @@ Receptionne les données.
 
 Envoie les données à la table SQL.
 
+Les données extraites pourront vous permettre de réaliser diverses statistiques sur les combats ([exemple](http://imgur.com/a/kCP9x))
+
   
 Images
 -------
