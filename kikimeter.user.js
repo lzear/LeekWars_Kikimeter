@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name				LeekWars : LeeKikiMeter
-// @version				0.4.9
+// @version				0.4.10
 // @description			Ce script améliore le rapport de combat : affiche un résumé des combats de leekwars, des graphes et tableaux d'analyse
 // @author				Elzéar, yLark, Foudge, AlexClaw
 // @match				http://leekwars.com/report/*
@@ -251,7 +251,7 @@ function Leek(name, team, tr) {
 	this.XP = parseInt(document.getElementById('tt_' + tr.getElementsByClassName('xp')[0].children[0].id).textContent.split('/')[0].replace(/[^\d.]/g, ''));
 	this.alive = (tr.getElementsByClassName('name')[0].children[0].className == 'alive') ? 1 : 0;
 	this.gainXP = parseInt(tr.getElementsByClassName('xp')[0].children[1].textContent.replace(/[^\d.]/g, ''));
-	this.gainTalent = parseInt(tr.getElementsByClassName('talent')[0].textContent.replace(/[^\-?\d.]/g, ''));
+	this.gainTalent = tr.getElementsByClassName('talent').length>0?parseInt(tr.getElementsByClassName('talent')[0].textContent.replace(/[^\-?\d.]/g, '')):0;
 	this.gainHabs = parseInt(tr.getElementsByClassName('money')[0].children[0].firstChild.textContent.replace(/[^\d.]/g, ''));
 	this.round = {};
 	this.PTusage = {};
