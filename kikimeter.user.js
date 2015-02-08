@@ -151,7 +151,7 @@ function Fight() {
 	this.nbRounds = parseInt(document.getElementById('duration').textContent.replace(/[^\d.]/g, ''));
 	this.nbLeeks = 0;
 	this.leeks = {};
-	
+
 	if(this.teamFight)
 		this.teams = [];
 	else
@@ -336,16 +336,25 @@ function Team(tr) {
 		this.teamId = parseInt(linkTab[linkTab.length - 1]); // Numéro de la team dans le jeu
 
 		this.name = tr.getElementsByClassName('name')[0].textContent;
-		this.level = parseInt(tr.getElementsByClassName('level')[0].textContent.replace(/[^\d.]/g, ''));
-		this.XP = parseInt(document.getElementById('tt_' + tr.getElementsByClassName('xp')[0].children[0].id).textContent.split('/')[0].replace(/[^\d.]/g, ''));
-		this.gainXP = parseInt(tr.getElementsByClassName('xp')[0].children[1].textContent.replace(/[^\d.]/g, ''));
+		if (tr.getElementsByClassName('level').length > 0) {
+			this.level = parseInt(tr.getElementsByClassName('level')[0].textContent.replace(/[^\d.]/g, ''));
+		} else {
+			this.level = 0;
+		}
+		if (tr.getElementsByClassName('xp').length > 0) {
+			this.XP = parseInt(document.getElementById('tt_' + tr.getElementsByClassName('xp')[0].children[0].id).textContent.split('/')[0].replace(/[^\d.]/g, ''));
+			this.gainXP = parseInt(tr.getElementsByClassName('xp')[0].children[1].textContent.replace(/[^\d.]/g, ''));
+		} else {
+			this.XP = 0;
+			this.gainXP = 0;
+		}
 	}
-	
+
 	this.addLeek = function(name) {
 		this.leeks.push(name);
 		this.nbLeeks++;
 	}
-	
+
 	this.color = function() {
 		return currentFight.leeks[this.leeks[0]].color;
 	}
@@ -442,7 +451,7 @@ function readActions() {
 			currentFight.leeks[RegExp.$1].addToRoundData(round, 'heal_in', parseInt(RegExp.$2.replace(/[^\d.]/g, '')));
 			if (attacker != null) currentFight.leeks[attacker].addToRoundData(round, 'heal_out', parseInt(RegExp.$2.replace(/[^\d.]/g, '')));
 		}
-		
+
 		// VITALITÉ
 		if (/^([^\s]+) gagne ([0-9]+) vitalité$/.test(actions[i].textContent)) {
 			currentFight.leeks[RegExp.$1].addToRoundData(round, 'vitality_in', parseInt(RegExp.$2.replace(/[^\d.]/g, '')));
@@ -787,7 +796,7 @@ function displayPTusageTable() {
 	// Créé les entêtes de colonnes avec les noms des poireaux
 	for (var j in currentFight.leeks) {
 		var th = document.createElement('th');
-		
+
 		var span = document.createElement('span');
 		if (!currentFight.leeks[j]['alive']) {
 			if(currentFight.nbLeeks <= 4) span.className = 'dead';	// N'affiche les crânes de mort que s'il y a peu de poireaux. Idéalement, il faudrait plutôt utiliser le nombre de caractères cumulé de tous les poireaux en jeu
@@ -940,16 +949,16 @@ function colorize_report_general() {
 
 // Génération des données pour le graph Rickshaw
 function getGraphSeries() {
-	
+
 	var palette_red  = new Rickshaw.Color.Palette({scheme : ['#DC3900','#F39E5B','#F34739','#E9930C','#E90C5B','#E9B106']});		// Palette de couleur perso
 	var palette_blue = new Rickshaw.Color.Palette({scheme : ['#0223AB','#307DC2','#5B4BC2','#079EB8','#5B07B8','#07B897']});		// Palette de couleur perso
 	var palette = new Rickshaw.Color.Palette({ scheme: 'munin' });		// Palette de couleur automatique
 	var series = [];
-	
+
 	for (var leek in currentFight.leeks) {	// Boucle sur les tours pour recalculer l'évolution de la vie des poireaux
 		var totalLife = currentFight.leeks[leek].life;
 		var data = [];
-		
+
 		if(currentFight.nbLeeks <= 2){	// Si on est en combat solo
 			var serie_color = currentFight.leeks[leek].color;
 		}else if( currentFight.leeks[leek].color === 'rgb(220, 0, 0)'){	// Si on est dans l'équipe rouge
@@ -957,9 +966,9 @@ function getGraphSeries() {
 		}else{
 			var serie_color = palette_blue.color();
 		}
-		
+
 		data[0] = {'x': 1, 'y': totalLife};
-		
+
 		for (var round = 1; round <= currentFight.nbRounds; round++) {
 			var dmg_in = currentFight.leeks[leek].getRoundData(round, 'dmg_in');
 			var heal_in = currentFight.leeks[leek].getRoundData(round, 'heal_in');
@@ -971,7 +980,7 @@ function getGraphSeries() {
 				data[round] = {'x': round+1, 'y': data[round - 1].y + diffPV};
 			if (data[round].y === 0) break; // Le poireau est mort, on ne continue pas à tracer sa vie
 		}
-		
+
 		var dataset = {
 			name: 'PV - ' + currentFight.leeks[leek].name,
 			color: serie_color,
@@ -979,7 +988,7 @@ function getGraphSeries() {
 		};
 		series.push(dataset);
 	}
-	
+
 	// Calcul de l'Équilibre de vie entre l'équipe 1 et 2 et de la vie totale des équipes 1 et 2
 	var data = [];
 	var dataTeam0 = [];
@@ -987,7 +996,7 @@ function getGraphSeries() {
 	var teamName = [];
 	var teams = [{'TotalLife': 0, 'life': []},
 				 {'TotalLife': 0, 'life': []}];
-	
+
 	if(currentFight.nbLeeks > 2) {	// Si on est en match équipe, on récupère le nom des équipes
 		teamName[0] = currentFight.teams[0].name;
 		teamName[1] = currentFight.teams[1].name;
@@ -998,15 +1007,15 @@ function getGraphSeries() {
 			teamName.push(currentFight.leeks[leek].name);
 		}
 	}
-	
+
 	for (var round = 0; round <= currentFight.nbRounds; round++) {	// Boucle sur les tours pour recalculer l'évolution de la vie des équipes
-	
+
 		if(teams[0].life[round] == undefined) teams[0].life[round] = (round === 0) ? 0 : teams[0].life[round - 1];
 		if(teams[1].life[round] == undefined) teams[1].life[round] = (round === 0) ? 0 : teams[1].life[round - 1];
-			
+
 		for (var leek in currentFight.leeks) {
 			var team = currentFight.leeks[leek].team;
-			
+
 			if(round === 0){
 				teams[team].TotalLife += currentFight.leeks[leek].life;
 			}else{
@@ -1021,7 +1030,7 @@ function getGraphSeries() {
 		dataTeam0[round] = {'x': round+1, 'y': (teams[0].TotalLife + teams[0].life[round])};
 		dataTeam1[round] = {'x': round+1, 'y': (teams[1].TotalLife + teams[1].life[round])};
 	}
-	
+
 	if( currentFight.nbLeeks > 2 ){		// N'envoie les données de vie des équipes 1 et 2 seulement si on n'est pas en combat solo
 		var dataset = {
 			name: 'PV - ' + teamName[0],
@@ -1029,7 +1038,7 @@ function getGraphSeries() {
 			data: dataTeam0
 		};
 		series.push(dataset);
-		
+
 		var dataset = {
 			name: 'PV - ' + teamName[1],
 			color: currentFight.teams[1].color(),
@@ -1037,60 +1046,60 @@ function getGraphSeries() {
 		};
 		series.push(dataset);
 	}
-	
+
 	var dataset = {
 		name: 'Équilibre ' + teamName[0] + ' - ' + teamName[1] + ' (% PV)',
 		color: palette.color(),
 		data: data
 	};
 	series.push(dataset);
-	
+
 	return series;
 }
 
 // Affiche le graph dans la page
 function displayChart() {
-	
+
 	GM_addStyle(GM_getResourceText('rickshaw_css'));	// Ajout de la feuille de style disponible dans le repository
-	
+
 	// Création des objets DOM qui vont supporter le graph
-	
+
 	var html_content = '<h1>Courbes</h1>';
 	html_content += '<div id="chart_container">';
 	html_content += '	<div id="chart" class="rickshaw_graph"></div>';
 	//html_content += '	<div id="timeline" class="rickshaw_annotation_timeline"></div>'; // à terminer d'implémenter plus tard
 	html_content += '</div>';
-	
+
 	html_content += '<div id="chart_footer">';
 	html_content += '	<div id="legend"></div>';
 	//html_content += '	<form id="offset_form" class="toggler">';
 	//html_content += '		<input type="radio" name="offset" id="line" value="line" style="display:none;" checked>';
 	//html_content += '		<label for="line" style="cursor:pointer;"><img title="Ligne" alt="Ligne" src="https://raw.githubusercontent.com/shutterstock/rickshaw/master/examples/images/om_lines.png"></label>';
-	
+
 	//html_content += '		<input type="radio" name="offset" id="stack" value="stack" style="display:none" >';
 	//html_content += '		<label for="stack" style="cursor:pointer;"><img title="Empilé" alt="Empilé" src="https://raw.githubusercontent.com/shutterstock/rickshaw/master/examples/images/om_stack.png"></label>';
-	
+
 	//html_content += '		<input type="radio" name="offset" id="pct" value="pct" style="display:none" >';
 	//html_content += '		<label for="pct" style="cursor:pointer;"><img title="Pourcentage" alt="Pourcentage" src="https://raw.githubusercontent.com/shutterstock/rickshaw/master/examples/images/om_percent.png"></label>';
 	//html_content += '	</form>';
 	html_content += '</div>';
-	
+
 	var chart = document.createElement('div');
 	chart.id = 'main_chart_container';
 	chart.innerHTML = html_content;
-	
+
 	// Insertion dans le DOM
 	var page = document.getElementById('page');
 	var report_actions = document.getElementById('report-actions');
 	page.insertBefore(chart, report_actions);
-	
-	
+
+
 	// Paramètage du graph rickshaw
 
 	// Récupère le choix d'interpolation de l'utilisateur
 	var checked = GM_getValue(STORAGE_DISPLAY_PREFIX + 'graph-interpolation', 1);
 	var interpolation_choice = (checked === 1)?'monotone':'line';
-	
+
 	var graph = new Rickshaw.Graph( {
 		element: document.querySelector("#chart"),
 		width: 930,
@@ -1165,15 +1174,15 @@ function displayChart() {
 
 // Ajoute une information sur le nombre d'erreurs et d'alertes présentes dans le debug
 function add_error_notification() {
-	
+
 	var log_type = ['error', 'warning'];	// deux class à parser
-	
+
 	var div_1 = document.createElement('div');
 	div_1.id = 'error_notification';
-	
+
 	for(var i = 0; i < log_type.length; i++){	// Boucle sur les types de notification qui nous intéressent : warning et erreur
 		var logs = document.getElementsByClassName('log ' + log_type[i]);
-		
+
 		if(logs.length > 0){
 			// Ajout d'un récap du nombre d'erreurs
 			span = document.createElement('span');
@@ -1184,7 +1193,7 @@ function add_error_notification() {
 			div_sum = document.createElement('div');
 			div_sum.appendChild(span);
 			div_1.appendChild(div_sum);
-			
+
 			// div contenant le détail de toutes les notifications d'erreur
 			div_2 = document.createElement('div');
 			div_2.id = 'kikimeter_' + log_type[i];
@@ -1248,7 +1257,7 @@ function displayConfig() {
 		dispData[key] = value;
 		GM_setValue(STORAGE_PREFIX + key, value);
 	});
-	
+
 	// Configuration du graph
 	var configGraphDiv = '<h2>Graphique</h2><div id="kikimeter-config-graph"></div>';
 	var key = 'graph-interpolation';
@@ -1446,7 +1455,7 @@ function main(data) {
 
 	// AFFICHE LES OPTIONS DE CONFIGURATION
 	displayConfig();
-	
+
 	// AJOUT DES NOTIFICATIONS D'ERROR ET WARNING EN TÊTE DE RAPPORT
 	add_error_notification();
 
