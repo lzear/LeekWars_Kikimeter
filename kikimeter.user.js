@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name				LeekWars : LeeKikiMeter
-// @version				0.4.11
+// @version				0.4.12
 // @description			Ce script améliore le rapport de combat : affiche un résumé des combats de leekwars, des graphes et tableaux d'analyse
 // @author				Elzéar, yLark, Foudge, AlexClaw
 // @match				http://leekwars.com/report/*
@@ -58,7 +58,8 @@ var dispData = {
 	'pm': 0,
 	'frequency': 0,
 	'appearence': 0,
-	'skin': 0
+	'skin': 0,
+	'invocation': 1
 };
 
 // STATICS
@@ -118,7 +119,8 @@ var leekData = { // variables relatives aux Leeks
 	'life': 'PV',
 	'pm': 'PM de base',
 	'pt': 'PT de base',
-	'skin': 'Skin'
+	'skin': 'Skin',
+	'invocation': 'Invocations'
 };
 var roundData = { // variables relatives aux Leeks/rounds
 	'roundsPlayed': 'Tours joués',
@@ -137,7 +139,8 @@ var roundData = { // variables relatives aux Leeks/rounds
 	'lastHits': 'Kills',
 	'fails': 'Échecs',
 	'blabla': 'Blabla',
-	'crashes': 'Plantages'
+	'crashes': 'Plantages',
+	'invocation': 'Invocations'
 };
 var allData = $.extend({}, leekData, roundData);
 
@@ -279,6 +282,7 @@ function Leek(name, team, tr) {
 	this.pt = rawFightData.leeks[this.rawFightDataId].pt;
 	this.skin = rawFightData.leeks[this.rawFightDataId].skin;
 	//this.team = rawFightData.leeks[this.rawFightDataId].team;
+	this.invocation = rawFightData.leeks[this.rawFightDataId].invocation;
 
 	this.addToPTusageData = function(dataName, value) {
 		if (isNaN(this.PTusage[dataName]))
@@ -495,6 +499,12 @@ function readActions() {
 			currentFight.leeks[RegExp.$1].addToRoundData(round, 'crashes', 1);
 		}
 
+		// INVOCATION
+		if (/^([^\s]+) invoque (.+)$/.test(actions[i].textContent)) {
+			attacker = RegExp.$1;
+			currentFight.leeks[attacker].addToRoundData(round, 'invocation', 1);
+		}
+
 		// Incrémente les données de la dernière action. Comme parfois les PT sont décomptés avant que les actions ne soient annoncées, ou vice-versa, on attend que les deux infos soient rassemblées pour comptabiliser
 		if (lastPTaction != null && lastPTcount != null) {
 			currentFight.leeks[currentLeek].addToPTusageData(lastPTaction, lastPTcount);
@@ -614,6 +624,12 @@ function generateHighlights() {
 		if (aliveLeeksCount == 1 && currentFight.teams[currentFight.leeks[BestLeek].team].nbLeeks > 1) {
 			Highlights['survivant'] = new Highlight('http://static.leekwars.com/image/trophy/winner.png', 'Survivant', '<span style="color:' + currentFight.leeks[BestLeek]['color'] + ';">' + currentFight.leeks[BestLeek]['name'] + '</span> est  le seul survivant', null);
 		}
+	}
+
+	// Invocateur
+	var BestLeek = getBestLeek('invocation', 'max');
+	if (BestLeek != null) {
+		Highlights['invocation'] = new Highlight('http://static.leekwars.com/image/trophy/invoker.png', 'Invocateur', '<span style="color:' + currentFight.leeks[BestLeek]['color'] + ';">' + currentFight.leeks[BestLeek]['name'] + '</span> a invoqué des bulbes ' + currentFight.leeks[BestLeek]['invocation'] + ' fois', 'Soit ' + Math.round(currentFight.leeks[BestLeek]['invocation'] / currentFight.fightSum('invocation') * 100) + ' % des invocations');
 	}
 }
 
