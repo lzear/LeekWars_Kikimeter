@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name				LeekWars : LeeKikiMeter
-// @version				0.4.12
+// @version				0.4.13
 // @description			Ce script améliore le rapport de combat : affiche un résumé des combats de leekwars, des graphes et tableaux d'analyse
 // @author				Elzéar, yLark, Foudge, AlexClaw
 // @match				http://leekwars.com/report/*
