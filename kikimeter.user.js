@@ -1186,6 +1186,25 @@ function displayChart() {
 	}, false);*/
 
 	graph.render();
+
+	// Revient à l'action ou le poireau séléctionné est en train de jouer (Leek Wars Fight Progress Bar)
+	$('#chart').on('click', function() {
+		var turn = $("#chart .detail div.x_label").text();
+		var player = $("#chart .detail div.item.active").text();
+		if (player.search("Équilibre ") == -1) {
+			turn = turn.split(" ");
+			player = player.split("- ");
+			if (player[1] !== undefined) player = player[1].split(":");
+			if (turn[1] !== undefined && player[1] !== undefined) {
+				player = player[0];
+				turn = turn[1];
+				var url = document.URL.split('/');
+				url[url.length-2] = "fight";
+				url = url.join('/') + "#" + turn + "/" + player;
+				document.location = url;
+			}
+		}
+	});
 }
 
 // Ajoute une information sur le nombre d'erreurs et d'alertes présentes dans le debug
